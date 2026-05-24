@@ -6,8 +6,8 @@
   "outputDirectory": "artifacts/smm-panel/dist/public",
   "rewrites": [
     {
-      "source": "/api/(.*)",
-      "destination": "/api"
+      "source": "/((?!assets/).*)",
+      "destination": "/index.html"
     }
   ]
 }
