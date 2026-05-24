@@ -1,7 +1,7 @@
 {
   "version": 2,
   "framework": null,
-  "installCommand": "pnpm install",
+  "installCommand": "pnpm install --no-frozen-lockfile",
   "buildCommand": "pnpm run typecheck:libs && pnpm --filter @workspace/smm-panel run build",
   "outputDirectory": "artifacts/smm-panel/dist/public",
   "rewrites": [
