@@ -1,0 +1,13 @@
+{
+  "version": 2,
+  "framework": null,
+  "installCommand": "pnpm install",
+  "buildCommand": "pnpm run typecheck:libs && pnpm --filter @workspace/smm-panel run build",
+  "outputDirectory": "artifacts/smm-panel/dist/public",
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "/api"
+    }
+  ]
+}
