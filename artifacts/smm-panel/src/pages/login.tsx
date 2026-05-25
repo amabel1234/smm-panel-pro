@@ -38,12 +38,14 @@ import { Link, useLocation } from "wouter";
           },
           onError: (err: any) => {
             const status = err?.status;
-            if (status === 405 || status === 404 || err?.message?.includes("fetch")) {
+            if (!status || err instanceof TypeError) {
+              toast.error("Tidak dapat terhubung ke server. Periksa koneksi internet kamu.");
+            } else if (status === 503 || status === 502) {
               toast.error("Server sedang maintenance. Coba lagi nanti.");
             } else if (status === 401) {
               toast.error("Email atau password salah.");
             } else {
-              toast.error(err?.data?.message || err?.message || "Login gagal. Coba lagi.");
+              toast.error(err?.data?.message || err?.data?.error || err?.message || "Login gagal. Coba lagi.");
             }
           },
         }
