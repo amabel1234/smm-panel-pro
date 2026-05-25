@@ -560,13 +560,29 @@ function serializeOrder(o: any) {
   return { ...o, price: parseFloat(o.price), createdAt: o.createdAt instanceof Date ? o.createdAt.toISOString() : o.createdAt, updatedAt: o.updatedAt instanceof Date ? o.updatedAt.toISOString() : o.updatedAt };
 }
 
+// ── Debug endpoint ────────────────────────────────────────────────────────────
+router.get("/debug/db", async (_req: any, res: any) => {
+  try {
+    const result = await sqlConn("SELECT current_database(), version(), NOW()");
+    const tables = await sqlConn("SELECT table_name FROM information_schema.tables WHERE table_schema='public' ORDER BY table_name");
+    res.json({ ok: true, db: result[0], tables: tables.map((t: any) => t.table_name) });
+  } catch (e: any) {
+    res.status(500).json({ ok: false, error: e.message, cause: e.cause?.message, code: e.cause?.code ?? e.code });
+  }
+});
+
 // ── Mount & Export ────────────────────────────────────────────────────────────
 app.use("/api", router);
 
 // Express 5 global error handler
 app.use((err: any, _req: any, res: any, _next: any) => {
-  console.error("API Error:", err?.message ?? err);
-  res.status(err?.status ?? 500).json({ error: err?.message ?? "Internal server error" });
+  const cause = err?.cause;
+  console.error("API Error:", err?.message, "| cause:", cause?.message ?? cause?.toString());
+  res.status(err?.status ?? 500).json({
+    error: err?.message ?? "Internal server error",
+    cause: cause?.message ?? cause?.toString() ?? null,
+    causeCode: cause?.code ?? null,
+  });
 });
 
 export default app;
