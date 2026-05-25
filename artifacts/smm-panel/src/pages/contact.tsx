@@ -24,7 +24,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
       id: "wa-channel",
       type: "WhatsApp",
       label: "Saluran WhatsApp",
-      value: "SMM Panel Pro Channel",
+      value: "Nixx SMM Channel",
       href: "https://whatsapp.com/channel/0029VbD0FGPIyPtQjZZNrA1Q",
       description: "Follow untuk info promo & update terbaru",
       icon: SiWhatsapp,
@@ -82,7 +82,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
               </div>
               <div>
                 <div className="text-lg font-bold">Nix — Owner</div>
-                <div className="text-sm text-muted-foreground mt-0.5">Admin & Pengelola SMM Panel Pro</div>
+                <div className="text-sm text-muted-foreground mt-0.5">Admin & Pengelola Nixx SMM</div>
                 <div className="flex items-center gap-1.5 mt-2">
                   <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
                   <span className="text-xs text-green-400 font-medium">Aktif · Respons cepat</span>
