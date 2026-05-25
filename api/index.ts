@@ -1,5 +1,4 @@
-import type { VercelRequest, VercelResponse } from "@vercel/node";
-import express, { type Express, Router, type Request, type Response, type NextFunction } from "express";
+import express, { type Express, Router, type Request, type Response, type NextFunction, type RequestHandler } from "express";
 import cors from "cors";
 import bcrypt from "bcryptjs";
 import { eq, and, desc, sql, ilike } from "drizzle-orm";
@@ -569,6 +568,4 @@ function serializeOrder(o: any) {
 // ── Mount & Export ────────────────────────────────────────────────────────────
 app.use("/api", router);
 
-export default function handler(req: VercelRequest, res: VercelResponse) {
-  return app(req as any, res as any);
-}
+export default app;
