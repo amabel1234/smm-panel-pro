@@ -3,8 +3,7 @@ import { Link, useLocation } from "wouter";
   import {
     LayoutDashboard, ShoppingCart, History, CreditCard, Wallet,
     Phone, Ticket, Users, User, ShieldAlert, LogOut, Menu, Bell,
-    ChevronRight, Zap,
-  } from "lucide-react";
+    ChevronRight, Zap,, MessageCircle } from "lucide-react";
   import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
   import { Avatar, AvatarFallback } from "@/components/ui/avatar";
   import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -20,6 +19,7 @@ import { Link, useLocation } from "wouter";
     { icon: Phone,           label: "Nomor Virtual",     href: "/nokos" },
     { icon: Ticket,          label: "Bantuan / Tiket",   href: "/tickets" },
     { icon: Users,           label: "Referral",          href: "/referral" },
+    { icon: MessageCircle,   label: "Kontak Owner",      href: "/contact" },
   ];
 
   const adminItems = [
