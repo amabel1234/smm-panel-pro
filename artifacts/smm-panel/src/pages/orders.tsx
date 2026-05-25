@@ -1,132 +1,164 @@
 import { AppLayout } from "@/components/layout/AppLayout";
-import { useListOrders, useRefillOrder } from "@workspace/api-client-react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
-import { formatRupiah } from "@/lib/utils";
-import { useState } from "react";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Button } from "@/components/ui/button";
-import { RotateCw, ExternalLink } from "lucide-react";
-import { toast } from "sonner";
+  import { useListOrders, useRefillOrder } from "@workspace/api-client-react";
+  import { Skeleton } from "@/components/ui/skeleton";
+  import { formatRupiah } from "@/lib/utils";
+  import { useState } from "react";
+  import { RotateCw, ExternalLink, Clock, CheckCircle2, Loader2, XCircle, Activity, ShoppingCart, Copy } from "lucide-react";
+  import { toast } from "sonner";
 
-export default function Orders() {
-  const [status, setStatus] = useState<string>("");
-  const { data, isLoading } = useListOrders({ status: status || undefined }, { query: { refetchInterval: 30000 }});
-  const refillMutation = useRefillOrder();
+  const STATUS_TABS = [
+    { value: "",            label: "Semua",    color: "text-foreground" },
+    { value: "pending",     label: "Menunggu", color: "text-yellow-400" },
+    { value: "processing",  label: "Diproses", color: "text-blue-400" },
+    { value: "completed",   label: "Selesai",  color: "text-green-400" },
+    { value: "partial",     label: "Parsial",  color: "text-orange-400" },
+    { value: "cancelled",   label: "Dibatal",  color: "text-red-400" },
+  ];
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'completed': return 'bg-green-500/10 text-green-500 border-green-500/20';
-      case 'processing': return 'bg-blue-500/10 text-blue-500 border-blue-500/20';
-      case 'pending': return 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20';
-      case 'partial': return 'bg-orange-500/10 text-orange-500 border-orange-500/20';
-      case 'cancelled': return 'bg-red-500/10 text-red-500 border-red-500/20';
-      case 'refunded': return 'bg-gray-500/10 text-gray-400 border-gray-500/20';
-      default: return 'bg-gray-500/10 text-gray-400 border-gray-500/20';
-    }
-  };
+  function StatusBadge({ status }: { status: string }) {
+    const map: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
+      completed:  { label: "Selesai",  color: "text-green-400 bg-green-400/10 border-green-400/30",  icon: <CheckCircle2 className="w-3 h-3" /> },
+      processing: { label: "Diproses", color: "text-blue-400 bg-blue-400/10 border-blue-400/30",    icon: <Loader2 className="w-3 h-3 animate-spin" /> },
+      pending:    { label: "Menunggu", color: "text-yellow-400 bg-yellow-400/10 border-yellow-400/30", icon: <Clock className="w-3 h-3" /> },
+      partial:    { label: "Parsial",  color: "text-orange-400 bg-orange-400/10 border-orange-400/30", icon: <Activity className="w-3 h-3" /> },
+      cancelled:  { label: "Dibatal",  color: "text-red-400 bg-red-400/10 border-red-400/30",        icon: <XCircle className="w-3 h-3" /> },
+      refunded:   { label: "Refund",   color: "text-gray-400 bg-gray-400/10 border-gray-400/30",     icon: <RotateCw className="w-3 h-3" /> },
+    };
+    const s = map[status] ?? map.pending;
+    return (
+      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border ${s.color}`}>
+        {s.icon} {s.label}
+      </span>
+    );
+  }
 
-  const handleRefill = (id: number) => {
-    refillMutation.mutate({ id }, {
-      onSuccess: () => toast.success("Refill requested successfully"),
-      onError: (err: any) => toast.error(err.message || "Failed to request refill")
-    });
-  };
+  export default function Orders() {
+    const [status, setStatus] = useState<string>("");
+    const { data, isLoading } = useListOrders({ status: status || undefined }, { query: { refetchInterval: 30000 } });
+    const refillMutation = useRefillOrder();
 
-  return (
-    <AppLayout>
-      <div className="space-y-6">
-        <h1 className="text-3xl font-bold font-display">Order History</h1>
-        
-        <Tabs defaultValue="all" value={status} onValueChange={setStatus} className="w-full">
-          <TabsList className="glass border border-border/50 bg-muted/20 overflow-x-auto flex w-full justify-start md:justify-center p-1 h-12">
-            <TabsTrigger value="" className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary">All Orders</TabsTrigger>
-            <TabsTrigger value="pending" className="data-[state=active]:bg-yellow-500/20 data-[state=active]:text-yellow-500">Pending</TabsTrigger>
-            <TabsTrigger value="processing" className="data-[state=active]:bg-blue-500/20 data-[state=active]:text-blue-500">Processing</TabsTrigger>
-            <TabsTrigger value="completed" className="data-[state=active]:bg-green-500/20 data-[state=active]:text-green-500">Completed</TabsTrigger>
-            <TabsTrigger value="partial" className="data-[state=active]:bg-orange-500/20 data-[state=active]:text-orange-500">Partial</TabsTrigger>
-            <TabsTrigger value="cancelled" className="data-[state=active]:bg-red-500/20 data-[state=active]:text-red-500">Cancelled</TabsTrigger>
-          </TabsList>
-        </Tabs>
+    const handleRefill = (id: number) => {
+      refillMutation.mutate({ id }, {
+        onSuccess: () => toast.success("Permintaan refill dikirim!"),
+        onError: (err: any) => toast.error(err?.message || "Gagal meminta refill"),
+      });
+    };
 
-        <Card className="glass overflow-hidden border-primary/10">
-          <CardContent className="p-0">
+    const copyLink = (link: string) => {
+      navigator.clipboard.writeText(link);
+      toast.success("Link disalin!");
+    };
+
+    return (
+      <AppLayout>
+        <div className="space-y-4">
+          {/* Header */}
+          <div>
+            <h1 className="text-2xl font-bold font-display">Riwayat Order</h1>
+            <p className="text-muted-foreground text-sm mt-0.5">Pantau semua ordermu di sini</p>
+          </div>
+
+          {/* Status filter */}
+          <div className="flex gap-1 flex-wrap">
+            {STATUS_TABS.map((tab) => (
+              <button
+                key={tab.value}
+                onClick={() => setStatus(tab.value)}
+                className={`px-3 py-1.5 rounded-xl text-xs font-medium border transition-all ${
+                  status === tab.value
+                    ? "gradient-bg text-white border-transparent"
+                    : "glass border-white/10 text-muted-foreground hover:border-white/20 hover:text-foreground"
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Orders */}
+          <div className="glass rounded-2xl border border-white/10 overflow-hidden">
             {isLoading ? (
-              <div className="p-6 space-y-4">
-                {[1, 2, 3, 4, 5].map(i => <Skeleton key={i} className="h-16 w-full" />)}
+              <div className="p-4 space-y-3">
+                {[1,2,3,4,5].map(i => <Skeleton key={i} className="h-20" />)}
+              </div>
+            ) : !data?.orders?.length ? (
+              <div className="p-10 text-center text-muted-foreground">
+                <ShoppingCart className="w-10 h-10 mx-auto mb-3 opacity-30" />
+                <p className="text-sm">Tidak ada order {status ? `dengan status "${STATUS_TABS.find(t=>t.value===status)?.label}"` : ""}</p>
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader className="bg-muted/50">
-                    <TableRow>
-                      <TableHead className="w-[80px]">ID</TableHead>
-                      <TableHead>Service</TableHead>
-                      <TableHead>Link</TableHead>
-                      <TableHead className="text-right">Amount</TableHead>
-                      <TableHead className="text-center">Status</TableHead>
-                      <TableHead className="text-right">Date</TableHead>
-                      <TableHead className="text-center">Action</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {data?.orders?.map(order => (
-                      <TableRow key={order.id} className="hover:bg-muted/20">
-                        <TableCell className="font-medium text-muted-foreground">#{order.id}</TableCell>
-                        <TableCell>
-                          <div className="font-medium line-clamp-1 max-w-[200px]">{order.serviceName}</div>
-                          <div className="text-xs text-muted-foreground">{order.platform}</div>
-                        </TableCell>
-                        <TableCell>
-                          <a href={order.link} target="_blank" rel="noreferrer" className="text-primary hover:underline flex items-center gap-1 text-sm max-w-[150px] truncate">
-                            Link <ExternalLink className="h-3 w-3 inline" />
-                          </a>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="font-medium">{order.quantity.toLocaleString()}</div>
-                          <div className="text-xs text-primary">{formatRupiah(order.price)}</div>
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <Badge variant="outline" className={getStatusColor(order.status)}>
-                            {order.status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-right text-sm text-muted-foreground">
-                          {new Date(order.createdAt).toLocaleDateString()}
-                        </TableCell>
-                        <TableCell className="text-center">
-                          {order.status === 'completed' && (
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
-                              title="Refill" 
-                              onClick={() => handleRefill(order.id)}
-                              className="text-blue-400 hover:text-blue-300 hover:bg-blue-400/10 h-8 w-8"
-                            >
-                              <RotateCw className="h-4 w-4" />
-                            </Button>
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                    {!data?.orders?.length && (
-                      <TableRow>
-                        <TableCell colSpan={7} className="text-center h-32 text-muted-foreground">
-                          <div className="flex flex-col items-center justify-center">
-                            <p>No orders found matching this status.</p>
+              <>
+                {/* Header tabel */}
+                <div className="hidden md:grid grid-cols-[60px_1fr_120px_100px_80px_80px] gap-3 px-4 py-2.5 border-b border-white/10 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  <div>ID</div>
+                  <div>Layanan</div>
+                  <div>Harga</div>
+                  <div>Qty</div>
+                  <div>Status</div>
+                  <div>Aksi</div>
+                </div>
+                <div className="divide-y divide-white/5">
+                  {data.orders.map((order: any) => (
+                    <div key={order.id} className="p-4 hover:bg-white/5 transition-colors">
+                      {/* Mobile layout */}
+                      <div className="md:hidden space-y-2">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1 min-w-0 mr-3">
+                            <div className="flex items-center gap-2 mb-0.5">
+                              <span className="text-xs text-muted-foreground font-mono">#{order.id}</span>
+                              <StatusBadge status={order.status} />
+                            </div>
+                            <div className="text-sm font-medium line-clamp-1">{order.serviceName}</div>
                           </div>
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
+                          <div className="text-right shrink-0">
+                            <div className="text-sm font-bold">{formatRupiah(order.charge)}</div>
+                            <div className="text-xs text-muted-foreground">{(order.quantity || 0).toLocaleString("id-ID")} pcs</div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="flex-1 text-xs text-muted-foreground truncate">{order.link}</div>
+                          <button onClick={() => copyLink(order.link)} className="p-1 rounded hover:bg-white/10"><Copy className="w-3 h-3" /></button>
+                          <a href={order.link} target="_blank" rel="noopener noreferrer" className="p-1 rounded hover:bg-white/10"><ExternalLink className="w-3 h-3" /></a>
+                          {order.status === "partial" && (
+                            <button onClick={() => handleRefill(order.id)} className="p-1 rounded hover:bg-white/10 text-blue-400" title="Refill">
+                              <RotateCw className="w-3 h-3" />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Desktop layout */}
+                      <div className="hidden md:grid grid-cols-[60px_1fr_120px_100px_80px_80px] gap-3 items-center">
+                        <div className="text-xs text-muted-foreground font-mono">#{order.id}</div>
+                        <div className="min-w-0">
+                          <div className="text-sm font-medium line-clamp-1">{order.serviceName}</div>
+                          <div className="flex items-center gap-1 mt-0.5">
+                            <span className="text-xs text-muted-foreground truncate max-w-[200px]">{order.link}</span>
+                            <button onClick={() => copyLink(order.link)} className="p-0.5 rounded hover:bg-white/10 shrink-0"><Copy className="w-2.5 h-2.5" /></button>
+                          </div>
+                        </div>
+                        <div className="text-sm font-semibold">{formatRupiah(order.charge)}</div>
+                        <div className="text-sm text-muted-foreground">{(order.quantity || 0).toLocaleString("id-ID")}</div>
+                        <div><StatusBadge status={order.status} /></div>
+                        <div className="flex items-center gap-1">
+                          <a href={order.link} target="_blank" rel="noopener noreferrer" className="p-1.5 rounded-lg hover:bg-white/10 transition-colors" title="Buka link">
+                            <ExternalLink className="w-3.5 h-3.5 text-muted-foreground" />
+                          </a>
+                          {order.status === "partial" && (
+                            <button onClick={() => handleRefill(order.id)} className="p-1.5 rounded-lg hover:bg-blue-400/10 text-blue-400 transition-colors" title="Refill">
+                              <RotateCw className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
             )}
-          </CardContent>
-        </Card>
-      </div>
-    </AppLayout>
-  );
-}
+          </div>
+        </div>
+      </AppLayout>
+    );
+  }
+  
