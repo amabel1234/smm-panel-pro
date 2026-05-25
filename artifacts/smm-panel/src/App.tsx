@@ -132,7 +132,7 @@ function Home() {
               <div className="w-8 h-8 rounded-lg gradient-bg flex items-center justify-center neon-glow-sm">
                 <Sparkles className="w-4 h-4 text-white" />
               </div>
-              <span className="font-bold text-lg font-display gradient-text-blue">SMM Panel Pro</span>
+              <span className="font-bold text-lg font-display gradient-text-blue">Nixx SMM</span>
             </div>
           </Link>
 
@@ -182,7 +182,7 @@ function Home() {
       <section className="relative z-10 text-center px-4 sm:px-6 pt-16 pb-20 max-w-5xl mx-auto">
         <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass border border-primary/20 text-xs text-primary font-medium mb-8 animate-fade-up">
           <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-          Platform SMM Terpercaya #1 Indonesia 🇮🇩
+          Nixx SMM — Platform SMM Terpercaya #1 Indonesia 🇮🇩
         </div>
 
         <h1 className="text-4xl sm:text-5xl md:text-7xl font-bold font-display leading-tight tracking-tight animate-fade-up-delay-1">
@@ -282,7 +282,7 @@ function Home() {
       <section id="harga" className="relative z-10 px-4 sm:px-6 pb-20 max-w-6xl mx-auto scroll-mt-20">
         <div className="text-center mb-12">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-green-400/10 text-green-400 text-xs font-medium mb-4">
-            <Star className="w-3.5 h-3.5" /> Kenapa SMM Panel Pro?
+            <Star className="w-3.5 h-3.5" /> Kenapa Nixx SMM?
           </div>
           <h2 className="text-3xl sm:text-4xl font-bold font-display">Fitur Unggulan Kami</h2>
           <p className="text-muted-foreground text-sm mt-3 max-w-xl mx-auto">
@@ -412,7 +412,7 @@ function Home() {
                 <div className="w-7 h-7 rounded-lg gradient-bg flex items-center justify-center">
                   <Sparkles className="w-3.5 h-3.5 text-white" />
                 </div>
-                <span className="font-bold font-display gradient-text-blue">SMM Panel Pro</span>
+                <span className="font-bold font-display gradient-text-blue">Nixx SMM</span>
               </div>
               <p className="text-xs text-muted-foreground leading-relaxed">
                 Platform SMM terpercaya #1 Indonesia. Boost social media kamu dengan layanan berkualitas tinggi.
@@ -446,7 +446,7 @@ function Home() {
             </div>
           </div>
           <div className="border-t border-white/5 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3">
-            <p className="text-xs text-muted-foreground">© 2025 SMM Panel Pro · Semua Hak Dilindungi</p>
+            <p className="text-xs text-muted-foreground">© 2025 Nixx SMM · Semua Hak Dilindungi</p>
             <div className="flex items-center gap-2">
               {[SiInstagram, SiTiktok, SiYoutube, SiX].map((Icon, i) => (
                 <div key={i} className="w-7 h-7 rounded-lg glass border border-white/10 flex items-center justify-center hover:bg-white/10 transition-colors cursor-pointer">
