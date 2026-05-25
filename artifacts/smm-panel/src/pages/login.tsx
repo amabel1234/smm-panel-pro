@@ -71,7 +71,7 @@ import { Link, useLocation } from "wouter";
             <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl gradient-bg neon-glow mb-4">
               <Sparkles className="w-8 h-8 text-white" />
             </div>
-            <h1 className="text-3xl font-bold gradient-text font-display">SMM Panel Pro</h1>
+            <h1 className="text-3xl font-bold gradient-text font-display">Nixx SMM</h1>
             <p className="text-muted-foreground mt-1 text-sm">Masuk ke akun kamu</p>
           </div>
 
