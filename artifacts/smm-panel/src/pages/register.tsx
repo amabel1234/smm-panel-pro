@@ -45,13 +45,15 @@ import { Link, useLocation } from "wouter";
             setLocation("/dashboard");
           },
           onError: (err: any) => {
-            const msg = err?.message || "";
-            if (msg.includes("405") || msg.includes("fetch") || err?.status === 405 || err?.status === 404) {
+            const status = err?.status;
+            if (!status || err instanceof TypeError) {
+              toast.error("Tidak dapat terhubung ke server. Periksa koneksi internet kamu.");
+            } else if (status === 503 || status === 502) {
               toast.error("Server sedang maintenance. Coba lagi nanti.");
-            } else if (err?.status === 409) {
+            } else if (status === 409) {
               toast.error("Email sudah terdaftar. Silakan login.");
             } else {
-              toast.error(err?.data?.message || msg || "Registrasi gagal. Coba lagi.");
+              toast.error(err?.data?.message || err?.data?.error || err?.message || "Registrasi gagal. Coba lagi.");
             }
           },
         }
