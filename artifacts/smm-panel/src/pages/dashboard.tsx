@@ -1,181 +1,151 @@
 import { AppLayout } from "@/components/layout/AppLayout";
-import { useGetDashboardStats, useGetRecentOrders } from "@workspace/api-client-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Wallet, ShoppingCart, Activity, ArrowUpRight, Clock, Package } from "lucide-react";
-import { formatRupiah } from "@/lib/utils";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Badge } from "@/components/ui/badge";
-import { Link } from "wouter";
+  import { useGetDashboardStats, useGetRecentOrders } from "@workspace/api-client-react";
+  import { Wallet, ShoppingCart, Activity, TrendingUp, Plus, Clock, CheckCircle2, XCircle, Loader2, ArrowRight, Zap } from "lucide-react";
+  import { formatRupiah } from "@/lib/utils";
+  import { Skeleton } from "@/components/ui/skeleton";
+  import { Link } from "wouter";
+  import { useAuth } from "@/contexts/AuthContext";
 
-export default function Dashboard() {
-  const { data: stats, isLoading: isLoadingStats } = useGetDashboardStats();
-  const { data: recentOrders, isLoading: isLoadingOrders } = useGetRecentOrders();
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'completed': return 'bg-green-500/20 text-green-500';
-      case 'processing': return 'bg-blue-500/20 text-blue-500';
-      case 'pending': return 'bg-yellow-500/20 text-yellow-500';
-      case 'cancelled': return 'bg-red-500/20 text-red-500';
-      default: return 'bg-gray-500/20 text-gray-500';
-    }
-  };
-
-  return (
-    <AppLayout>
-      <div className="space-y-8">
-        <div>
-          <h1 className="text-3xl font-bold font-display">Dashboard</h1>
-          <p className="text-muted-foreground mt-1">Welcome to your command center.</p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <Card className="glass neon-glow-secondary/20">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Balance</CardTitle>
-              <Wallet className="h-5 w-5 text-primary" />
-            </CardHeader>
-            <CardContent>
-              {isLoadingStats ? (
-                <Skeleton className="h-8 w-32" />
-              ) : (
-                <div className="text-2xl font-bold neon-text">{formatRupiah(stats?.balance || 0)}</div>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card className="glass hover-elevate transition-all">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Total Orders</CardTitle>
-              <ShoppingCart className="h-5 w-5 text-secondary" />
-            </CardHeader>
-            <CardContent>
-              {isLoadingStats ? (
-                <Skeleton className="h-8 w-16" />
-              ) : (
-                <div className="text-2xl font-bold">{stats?.totalOrders || 0}</div>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card className="glass hover-elevate transition-all">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Active Orders</CardTitle>
-              <Activity className="h-5 w-5 text-chart-3" />
-            </CardHeader>
-            <CardContent>
-              {isLoadingStats ? (
-                <Skeleton className="h-8 w-16" />
-              ) : (
-                <div className="text-2xl font-bold">{stats?.activeOrders || 0}</div>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card className="glass hover-elevate transition-all">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Spent This Month</CardTitle>
-              <ArrowUpRight className="h-5 w-5 text-destructive" />
-            </CardHeader>
-            <CardContent>
-              {isLoadingStats ? (
-                <Skeleton className="h-8 w-32" />
-              ) : (
-                <div className="text-2xl font-bold">{formatRupiah(stats?.spentThisMonth || 0)}</div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 space-y-6">
-            <Card className="glass">
-              <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle>Recent Orders</CardTitle>
-                <Link href="/orders" className="text-sm text-primary hover:underline">View All</Link>
-              </CardHeader>
-              <CardContent>
-                {isLoadingOrders ? (
-                  <div className="space-y-4">
-                    {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-12 w-full" />)}
-                  </div>
-                ) : recentOrders?.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
-                    <Package className="h-12 w-12 mb-4 opacity-20" />
-                    <p>No recent orders found</p>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {recentOrders?.map(order => (
-                      <div key={order.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/50 border border-border/50">
-                        <div className="flex items-center gap-4">
-                          <div className="w-10 h-10 rounded bg-background flex items-center justify-center border border-border">
-                            <Clock className="h-5 w-5 text-muted-foreground" />
-                          </div>
-                          <div>
-                            <p className="font-medium text-sm line-clamp-1 max-w-[200px] md:max-w-xs">{order.serviceName}</p>
-                            <p className="text-xs text-muted-foreground">{new Date(order.createdAt).toLocaleDateString()}</p>
-                          </div>
-                        </div>
-                        <div className="flex flex-col items-end gap-2">
-                          <span className="font-medium">{formatRupiah(order.price)}</span>
-                          <Badge variant="outline" className={getStatusColor(order.status)}>
-                            {order.status}
-                          </Badge>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-
-          <div className="space-y-6">
-            <Card className="glass relative overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-secondary/10 z-0 pointer-events-none" />
-              <CardHeader className="relative z-10">
-                <CardTitle>Quick Actions</CardTitle>
-              </CardHeader>
-              <CardContent className="relative z-10 space-y-3">
-                <Link href="/services">
-                  <div className="flex items-center gap-3 p-3 rounded-lg border border-border bg-card/50 hover:bg-card hover:border-primary/50 transition-all cursor-pointer group">
-                    <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
-                      <ShoppingCart className="h-5 w-5" />
-                    </div>
-                    <div>
-                      <p className="font-medium">New Order</p>
-                      <p className="text-xs text-muted-foreground">Browse all services</p>
-                    </div>
-                  </div>
-                </Link>
-                <Link href="/deposit">
-                  <div className="flex items-center gap-3 p-3 rounded-lg border border-border bg-card/50 hover:bg-card hover:border-primary/50 transition-all cursor-pointer group">
-                    <div className="w-10 h-10 rounded-full bg-secondary/20 flex items-center justify-center text-secondary group-hover:scale-110 transition-transform">
-                      <Wallet className="h-5 w-5" />
-                    </div>
-                    <div>
-                      <p className="font-medium">Deposit Funds</p>
-                      <p className="text-xs text-muted-foreground">Top up your balance</p>
-                    </div>
-                  </div>
-                </Link>
-                <Link href="/tickets">
-                  <div className="flex items-center gap-3 p-3 rounded-lg border border-border bg-card/50 hover:bg-card hover:border-primary/50 transition-all cursor-pointer group">
-                    <div className="w-10 h-10 rounded-full bg-chart-3/20 flex items-center justify-center text-chart-3 group-hover:scale-110 transition-transform">
-                      <Activity className="h-5 w-5" />
-                    </div>
-                    <div>
-                      <p className="font-medium">Support Ticket</p>
-                      <p className="text-xs text-muted-foreground">Need help?</p>
-                    </div>
-                  </div>
-                </Link>
-              </CardContent>
-            </Card>
+  function StatCard({ icon: Icon, label, value, color, loading, href }: any) {
+    const inner = (
+      <div className="glass rounded-2xl p-4 border border-white/10 hover:border-white/20 transition-all">
+        <div className="flex items-center justify-between mb-3">
+          <span className="text-xs text-muted-foreground font-medium">{label}</span>
+          <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${color}`}>
+            <Icon className="w-4 h-4 text-white" />
           </div>
         </div>
+        {loading ? <Skeleton className="h-7 w-24" /> : (
+          <div className="text-xl font-bold font-display">{value}</div>
+        )}
       </div>
-    </AppLayout>
-  );
-}
+    );
+    return href ? <Link href={href}><div className="cursor-pointer hover:scale-[1.02] transition-transform">{inner}</div></Link> : inner;
+  }
+
+  function StatusIcon({ status }: { status: string }) {
+    const map: Record<string, { icon: React.ReactNode; color: string; label: string }> = {
+      completed:  { icon: <CheckCircle2 className="w-3 h-3" />, color: "text-green-400 bg-green-400/10",  label: "Selesai" },
+      processing: { icon: <Loader2 className="w-3 h-3 animate-spin" />, color: "text-blue-400 bg-blue-400/10",   label: "Diproses" },
+      pending:    { icon: <Clock className="w-3 h-3" />,         color: "text-yellow-400 bg-yellow-400/10", label: "Menunggu" },
+      partial:    { icon: <Activity className="w-3 h-3" />,      color: "text-orange-400 bg-orange-400/10", label: "Parsial" },
+      cancelled:  { icon: <XCircle className="w-3 h-3" />,       color: "text-red-400 bg-red-400/10",       label: "Dibatal" },
+    };
+    const s = map[status] ?? map.pending;
+    return (
+      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${s.color}`}>
+        {s.icon} {s.label}
+      </span>
+    );
+  }
+
+  export default function Dashboard() {
+    const { user } = useAuth();
+    const { data: stats, isLoading: loadingStats } = useGetDashboardStats();
+    const { data: recent, isLoading: loadingOrders } = useGetRecentOrders();
+
+    return (
+      <AppLayout>
+        <div className="space-y-6">
+          {/* Greeting */}
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold font-display">
+                Halo, {user?.name?.split(" ")[0]} 👋
+              </h1>
+              <p className="text-muted-foreground text-sm mt-0.5">Selamat datang kembali di SMM Pro</p>
+            </div>
+            <Link href="/services">
+              <div className="hidden md:flex items-center gap-2 px-4 py-2 rounded-xl shimmer-btn text-white text-sm font-semibold cursor-pointer hover:opacity-90 transition-all">
+                <Plus className="w-4 h-4" /> Buat Order
+              </div>
+            </Link>
+          </div>
+
+          {/* Stats */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            <StatCard icon={Wallet}       label="Saldo"          value={formatRupiah(stats?.balance || 0)}       color="gradient-bg"             loading={loadingStats} href="/deposit" />
+            <StatCard icon={ShoppingCart} label="Total Order"    value={stats?.totalOrders || 0}                 color="bg-blue-500"             loading={loadingStats} />
+            <StatCard icon={Activity}     label="Order Aktif"    value={stats?.activeOrders || 0}                color="bg-yellow-500"           loading={loadingStats} href="/orders" />
+            <StatCard icon={TrendingUp}   label="Total Deposit"  value={formatRupiah(stats?.totalDeposited || 0)} color="bg-green-500"            loading={loadingStats} href="/deposit" />
+          </div>
+
+          {/* Quick actions */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {[
+              { label: "Order Sekarang",  href: "/services",     color: "gradient-bg neon-glow-sm",           icon: Zap },
+              { label: "Top Up Saldo",    href: "/deposit",      color: "bg-green-500/20 border-green-500/30 hover:bg-green-500/30", icon: Plus },
+              { label: "Cek Order",       href: "/orders",       color: "bg-blue-500/20 border-blue-500/30 hover:bg-blue-500/30",    icon: Activity },
+              { label: "Hubungi Kami",    href: "/tickets",      color: "bg-purple-500/20 border-purple-500/30 hover:bg-purple-500/30", icon: ArrowRight },
+            ].map((q) => (
+              <Link key={q.href} href={q.href}>
+                <div className={`flex items-center gap-2 p-3 rounded-xl border text-sm font-medium text-white transition-all cursor-pointer hover:scale-[1.02] ${q.color}`}>
+                  <q.icon className="w-4 h-4" />
+                  {q.label}
+                </div>
+              </Link>
+            ))}
+          </div>
+
+          {/* Recent Orders */}
+          <div className="glass rounded-2xl border border-white/10 overflow-hidden">
+            <div className="p-4 border-b border-white/10 flex items-center justify-between">
+              <h2 className="font-semibold flex items-center gap-2">
+                <Activity className="w-4 h-4 text-primary" /> Order Terbaru
+              </h2>
+              <Link href="/orders">
+                <span className="text-xs text-primary hover:underline cursor-pointer">Lihat semua →</span>
+              </Link>
+            </div>
+
+            {loadingOrders ? (
+              <div className="p-4 space-y-3">
+                {[1,2,3].map(i => <Skeleton key={i} className="h-14 w-full" />)}
+              </div>
+            ) : !recent?.orders?.length ? (
+              <div className="p-10 text-center text-muted-foreground">
+                <ShoppingCart className="w-10 h-10 mx-auto mb-3 opacity-30" />
+                <p className="text-sm">Belum ada order</p>
+                <Link href="/services">
+                  <div className="mt-3 inline-flex items-center gap-1 text-xs text-primary hover:underline cursor-pointer">
+                    <Plus className="w-3 h-3" /> Buat order pertama kamu
+                  </div>
+                </Link>
+              </div>
+            ) : (
+              <div className="divide-y divide-white/5">
+                {recent.orders.slice(0, 8).map((order: any) => (
+                  <div key={order.id} className="p-4 flex items-center gap-3 hover:bg-white/5 transition-colors">
+                    <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center shrink-0 text-xs font-bold text-primary">
+                      #{order.id}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium truncate">{order.serviceName}</div>
+                      <div className="text-xs text-muted-foreground truncate">{order.link}</div>
+                    </div>
+                    <div className="text-right shrink-0 space-y-1">
+                      <div className="text-sm font-semibold">{formatRupiah(order.charge)}</div>
+                      <StatusIcon status={order.status} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Info box */}
+          <div className="glass rounded-2xl border border-primary/20 p-4">
+            <h3 className="font-semibold text-sm mb-2 flex items-center gap-2">
+              <Zap className="w-4 h-4 text-primary" /> Tips Penggunaan
+            </h3>
+            <ul className="space-y-1.5 text-xs text-muted-foreground">
+              <li>• Pastikan link yang kamu masukkan <strong className="text-foreground">akun publik</strong> agar order dapat diproses</li>
+              <li>• Order biasanya selesai dalam <strong className="text-foreground">1-24 jam</strong> tergantung layanan</li>
+              <li>• Gunakan fitur <strong className="text-foreground">Referral</strong> untuk dapat bonus saldo gratis</li>
+            </ul>
+          </div>
+        </div>
+      </AppLayout>
+    );
+  }
+  
