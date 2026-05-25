@@ -25,7 +25,7 @@ import { Link, useLocation } from "wouter";
   const adminItems = [
     { icon: ShieldAlert, label: "Admin Dashboard",  href: "/admin" },
     { icon: Users,       label: "Kelola Pengguna",  href: "/admin/users" },
-    { icon: ShoppingCart,"Kelola Layanan",  href: "/admin/services" },
+    { icon: ShoppingCart, label: "Kelola Layanan", href: "/admin/services" },
     { icon: History,     label: "Kelola Order",     href: "/admin/orders" },
     { icon: CreditCard,  label: "Kelola Deposit",   href: "/admin/deposits" },
   ];
