@@ -1,231 +1,198 @@
 import { Link, useLocation } from "wouter";
-import { useAuth } from "@/contexts/AuthContext";
-import { Button } from "@/components/ui/button";
-import {
-  LayoutDashboard,
-  ShoppingCart,
-  History,
-  CreditCard,
-  Wallet,
-  Phone,
-  Ticket,
-  Bell,
-  Users,
-  User,
-  ShieldAlert,
-  LogOut,
-  Menu,
-} from "lucide-react";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { formatRupiah } from "@/lib/utils";
+  import { useAuth } from "@/contexts/AuthContext";
+  import {
+    LayoutDashboard, ShoppingCart, History, CreditCard, Wallet,
+    Phone, Ticket, Users, User, ShieldAlert, LogOut, Menu, Bell,
+    ChevronRight, Zap,
+  } from "lucide-react";
+  import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+  import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+  import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+  import { formatRupiah } from "@/lib/utils";
+  import { useState } from "react";
 
-const navItems = [
-  { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard" },
-  { icon: ShoppingCart, label: "Services", href: "/services" },
-  { icon: History, label: "Orders", href: "/orders" },
-  { icon: CreditCard, label: "Deposit", href: "/deposit" },
-  { icon: Wallet, label: "Transactions", href: "/transactions" },
-  { icon: Phone, label: "Virtual Number", href: "/nokos" },
-  { icon: Ticket, label: "Tickets", href: "/tickets" },
-  { icon: Users, label: "Referral", href: "/referral" },
-];
+  const navItems = [
+    { icon: LayoutDashboard, label: "Dashboard",        href: "/dashboard" },
+    { icon: ShoppingCart,    label: "Order Layanan",     href: "/services" },
+    { icon: History,         label: "Riwayat Order",     href: "/orders" },
+    { icon: CreditCard,      label: "Top Up Saldo",      href: "/deposit" },
+    { icon: Wallet,          label: "Transaksi",         href: "/transactions" },
+    { icon: Phone,           label: "Nomor Virtual",     href: "/nokos" },
+    { icon: Ticket,          label: "Bantuan / Tiket",   href: "/tickets" },
+    { icon: Users,           label: "Referral",          href: "/referral" },
+  ];
 
-const adminItems = [
-  { icon: ShieldAlert, label: "Admin Dashboard", href: "/admin" },
-  { icon: Users, label: "Manage Users", href: "/admin/users" },
-  { icon: ShoppingCart, label: "Manage Services", href: "/admin/services" },
-  { icon: History, label: "Manage Orders", href: "/admin/orders" },
-  { icon: CreditCard, label: "Manage Deposits", href: "/admin/deposits" },
-];
+  const adminItems = [
+    { icon: ShieldAlert, label: "Admin Dashboard",  href: "/admin" },
+    { icon: Users,       label: "Kelola Pengguna",  href: "/admin/users" },
+    { icon: ShoppingCart,"Kelola Layanan",  href: "/admin/services" },
+    { icon: History,     label: "Kelola Order",     href: "/admin/orders" },
+    { icon: CreditCard,  label: "Kelola Deposit",   href: "/admin/deposits" },
+  ];
 
-export function AppLayout({ children }: { children: React.ReactNode }) {
-  const [location, setLocation] = useLocation();
-  const { user, logout, isAdmin } = useAuth();
+  function NavItem({ item, active }: { item: typeof navItems[0]; active: boolean }) {
+    return (
+      <Link href={item.href}>
+        <div className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all cursor-pointer ${
+          active
+            ? "bg-primary/15 text-primary border border-primary/25"
+            : "text-muted-foreground hover:bg-white/5 hover:text-foreground"
+        }`}>
+          <item.icon className={`w-4 h-4 shrink-0 ${active ? "text-primary" : ""}`} />
+          <span>{item.label}</span>
+          {active && <ChevronRight className="w-3 h-3 ml-auto text-primary/60" />}
+        </div>
+      </Link>
+    );
+  }
 
-  const handleLogout = () => {
-    logout();
-    setLocation("/login");
-  };
-
-  const NavLinks = ({ items }: { items: typeof navItems }) => (
-    <div className="space-y-1">
-      {items.map((item) => {
-        const isActive = location === item.href;
-        return (
-          <Link key={item.href} href={item.href}>
-            <span
-              className={`flex items-center gap-3 px-3 py-2 rounded-md transition-colors cursor-pointer ${
-                isActive
-                  ? "bg-primary/10 text-primary font-medium"
-                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
-              }`}
-            >
-              <item.icon className="h-5 w-5" />
-              {item.label}
-            </span>
+  function SidebarContent({ location, user, isAdmin, logout }: any) {
+    return (
+      <div className="flex flex-col h-full">
+        {/* Logo */}
+        <div className="p-4 border-b border-white/10">
+          <Link href="/dashboard">
+            <div className="flex items-center gap-2.5 cursor-pointer">
+              <div className="w-8 h-8 rounded-lg gradient-bg flex items-center justify-center neon-glow-sm">
+                <Zap className="w-4 h-4 text-white" />
+              </div>
+              <span className="font-bold text-lg font-display gradient-text-blue">SMM Pro</span>
+            </div>
           </Link>
-        );
-      })}
-    </div>
-  );
-
-  return (
-    <div className="min-h-screen bg-background flex flex-col md:flex-row">
-      {/* Desktop Sidebar */}
-      <aside className="hidden md:flex flex-col w-64 border-r border-border bg-card p-4">
-        <div className="flex items-center gap-2 mb-8 px-2">
-          <div className="w-8 h-8 rounded bg-primary flex items-center justify-center neon-glow">
-            <span className="text-primary-foreground font-bold text-lg">S</span>
-          </div>
-          <span className="text-xl font-bold gradient-text">SMM Pro</span>
         </div>
 
-        <div className="mb-6 px-3 py-3 rounded-xl glass border border-primary/20">
-          <p className="text-xs text-muted-foreground mb-1">Total Balance</p>
-          <p className="text-xl font-bold neon-text">
-            {formatRupiah(user?.balance || 0)}
-          </p>
+        {/* Balance card */}
+        <div className="p-3">
+          <Link href="/deposit">
+            <div className="glass rounded-xl p-3 border border-primary/20 hover:border-primary/40 transition-colors cursor-pointer">
+              <div className="text-xs text-muted-foreground mb-0.5">Saldo Kamu</div>
+              <div className="text-lg font-bold text-primary">{formatRupiah(user?.balance || 0)}</div>
+              <div className="text-xs text-primary/60 mt-0.5">+ Top Up →</div>
+            </div>
+          </Link>
         </div>
 
-        <nav className="flex-1 overflow-y-auto space-y-6">
-          <div>
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-3">
-              Menu
-            </p>
-            <NavLinks items={navItems} />
-          </div>
+        {/* Nav */}
+        <nav className="flex-1 overflow-y-auto px-2 py-2 space-y-0.5">
+          <div className="text-xs font-semibold text-muted-foreground/50 px-3 py-2 uppercase tracking-wider">Menu</div>
+          {navItems.map(item => (
+            <NavItem key={item.href} item={item} active={location === item.href} />
+          ))}
 
           {isAdmin && (
-            <div>
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-3">
-                Admin
-              </p>
-              <NavLinks items={adminItems} />
-            </div>
+            <>
+              <div className="text-xs font-semibold text-muted-foreground/50 px-3 py-2 uppercase tracking-wider mt-3">Admin</div>
+              {adminItems.map(item => (
+                <NavItem key={item.href} item={item} active={location === item.href} />
+              ))}
+            </>
           )}
         </nav>
-      </aside>
 
-      <div className="flex-1 flex flex-col min-w-0">
-        {/* Topbar */}
-        <header className="h-16 border-b border-border bg-card/50 backdrop-blur flex items-center justify-between px-4 sticky top-0 z-10">
-          <div className="flex items-center gap-2">
-            {/* Mobile Menu */}
-            <Sheet>
+        {/* Footer */}
+        <div className="p-3 border-t border-white/10">
+          <button
+            onClick={logout}
+            className="flex items-center gap-2.5 px-3 py-2.5 w-full rounded-xl text-sm text-muted-foreground hover:text-red-400 hover:bg-red-400/5 transition-all"
+          >
+            <LogOut className="w-4 h-4" /> Keluar
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  export function AppLayout({ children }: { children: React.ReactNode }) {
+    const [location] = useLocation();
+    const { user, logout, isAdmin } = useAuth();
+    const [sheetOpen, setSheetOpen] = useState(false);
+
+    const handleLogout = () => {
+      logout();
+      window.location.href = "/";
+    };
+
+    return (
+      <div className="min-h-screen mesh-bg flex">
+        {/* Desktop sidebar */}
+        <aside className="hidden lg:flex w-60 xl:w-64 flex-col fixed inset-y-0 left-0 z-30 bg-background/80 backdrop-blur-xl border-r border-white/10">
+          <SidebarContent location={location} user={user} isAdmin={isAdmin} logout={handleLogout} />
+        </aside>
+
+        {/* Main */}
+        <div className="flex-1 lg:ml-60 xl:ml-64 flex flex-col min-h-screen">
+          {/* Top bar */}
+          <header className="sticky top-0 z-20 bg-background/80 backdrop-blur-xl border-b border-white/10 px-4 py-3 flex items-center justify-between">
+            {/* Mobile: hamburger */}
+            <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
               <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="md:hidden">
-                  <Menu className="h-5 w-5" />
-                </Button>
+                <button className="lg:hidden p-2 rounded-lg hover:bg-white/10 transition-colors">
+                  <Menu className="w-5 h-5" />
+                </button>
               </SheetTrigger>
-              <SheetContent side="left" className="w-64 p-0 bg-card border-r-border">
-                <div className="p-4 flex flex-col h-full">
-                  <div className="flex items-center gap-2 mb-8 px-2">
-                    <div className="w-8 h-8 rounded bg-primary flex items-center justify-center neon-glow">
-                      <span className="text-primary-foreground font-bold text-lg">S</span>
-                    </div>
-                    <span className="text-xl font-bold gradient-text">SMM Pro</span>
-                  </div>
-                  <nav className="flex-1 overflow-y-auto space-y-6">
-                    <div>
-                      <NavLinks items={navItems} />
-                    </div>
-                    {isAdmin && (
-                      <div>
-                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-3">
-                          Admin
-                        </p>
-                        <NavLinks items={adminItems} />
-                      </div>
-                    )}
-                  </nav>
-                </div>
+              <SheetContent side="left" className="w-64 p-0 bg-background/95 backdrop-blur-xl border-white/10">
+                <SidebarContent location={location} user={user} isAdmin={isAdmin} logout={handleLogout} />
               </SheetContent>
             </Sheet>
 
-            <h1 className="text-lg font-semibold md:hidden">SMM Pro</h1>
-          </div>
+            {/* Mobile logo */}
+            <div className="lg:hidden flex items-center gap-2">
+              <div className="w-7 h-7 rounded-lg gradient-bg flex items-center justify-center">
+                <Zap className="w-3.5 h-3.5 text-white" />
+              </div>
+              <span className="font-bold font-display gradient-text-blue text-sm">SMM Pro</span>
+            </div>
+            
+            <div className="hidden lg:block" />
 
-          <div className="flex items-center gap-4">
-            <Link href="/notifications">
-              <Button variant="ghost" size="icon" className="relative">
-                <Bell className="h-5 w-5" />
-                <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-primary neon-glow" />
-              </Button>
-            </Link>
+            {/* Right side */}
+            <div className="flex items-center gap-2">
+              {/* Balance mobile */}
+              <Link href="/deposit">
+                <div className="lg:hidden px-3 py-1.5 rounded-lg glass border border-primary/20 text-xs font-semibold text-primary cursor-pointer">
+                  {formatRupiah(user?.balance || 0)}
+                </div>
+              </Link>
 
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-                  <Avatar className="h-8 w-8">
-                    <AvatarFallback className="bg-primary/20 text-primary">
-                      {user?.name?.charAt(0).toUpperCase() || "U"}
-                    </AvatarFallback>
-                  </Avatar>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-56" align="end" forceMount>
-                <DropdownMenuLabel className="font-normal">
-                  <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-medium leading-none">{user?.name}</p>
-                    <p className="text-xs leading-none text-muted-foreground">
-                      {user?.email}
-                    </p>
+              {/* User menu */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="flex items-center gap-2 p-1 rounded-xl hover:bg-white/10 transition-colors">
+                    <Avatar className="w-8 h-8">
+                      <AvatarFallback className="gradient-bg text-white text-xs font-bold">
+                        {user?.name?.charAt(0)?.toUpperCase() || "U"}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="hidden md:block text-sm font-medium max-w-[120px] truncate">{user?.name}</span>
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48 glass border-white/10">
+                  <div className="px-3 py-2">
+                    <div className="font-medium text-sm truncate">{user?.name}</div>
+                    <div className="text-xs text-muted-foreground truncate">{user?.email}</div>
                   </div>
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                  <Link href="/profile" className="flex items-center cursor-pointer w-full">
-                    <User className="mr-2 h-4 w-4" />
-                    <span>Profile</span>
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleLogout} className="text-destructive">
-                  <LogOut className="mr-2 h-4 w-4" />
-                  <span>Log out</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        </header>
+                  <DropdownMenuSeparator className="bg-white/10" />
+                  <DropdownMenuItem asChild>
+                    <Link href="/profile"><div className="flex items-center gap-2 cursor-pointer w-full"><User className="w-4 h-4" /> Profil Saya</div></Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/tickets"><div className="flex items-center gap-2 cursor-pointer w-full"><Ticket className="w-4 h-4" /> Bantuan</div></Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator className="bg-white/10" />
+                  <DropdownMenuItem onClick={handleLogout} className="text-red-400 focus:text-red-400 focus:bg-red-400/10">
+                    <LogOut className="w-4 h-4 mr-2" /> Keluar
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </header>
 
-        {/* Main Content */}
-        <main className="flex-1 p-4 md:p-6 overflow-auto pb-20 md:pb-6">
-          <div className="max-w-6xl mx-auto">{children}</div>
-        </main>
+          {/* Page content */}
+          <main className="flex-1 p-4 md:p-6">
+            {children}
+          </main>
+        </div>
       </div>
-
-      {/* Mobile Bottom Nav */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-card border-t border-border flex items-center justify-around px-2 z-20 pb-safe">
-        {[
-          { icon: LayoutDashboard, href: "/dashboard" },
-          { icon: ShoppingCart, href: "/services" },
-          { icon: History, href: "/orders" },
-          { icon: CreditCard, href: "/deposit" },
-          { icon: User, href: "/profile" },
-        ].map((item) => {
-          const isActive = location === item.href;
-          return (
-            <Link key={item.href} href={item.href}>
-              <span
-                className={`flex flex-col items-center justify-center w-12 h-12 rounded-full cursor-pointer ${
-                  isActive ? "text-primary" : "text-muted-foreground"
-                }`}
-              >
-                <item.icon className={`h-6 w-6 ${isActive ? "neon-text" : ""}`} />
-              </span>
-            </Link>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
+    );
+  }
+  
