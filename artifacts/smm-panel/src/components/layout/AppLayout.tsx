@@ -1,5 +1,6 @@
 import { Link, useLocation } from "wouter";
   import { useAuth } from "@/contexts/AuthContext";
+  import { useWebSocket } from "@/hooks/useWebSocket";
   import {
     LayoutDashboard, ShoppingCart, History, CreditCard, Wallet,
     Phone, Ticket, Users, User, ShieldAlert, LogOut, Menu, Bell,
@@ -104,8 +105,10 @@ import { Link, useLocation } from "wouter";
 
   export function AppLayout({ children }: { children: React.ReactNode }) {
     const [location] = useLocation();
-    const { user, logout, isAdmin } = useAuth();
+    const { user, logout, isAdmin, token } = useAuth();
     const [sheetOpen, setSheetOpen] = useState(false);
+
+    useWebSocket(token);
 
     const handleLogout = () => {
       logout();

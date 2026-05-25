@@ -25,7 +25,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 
     const handleSubmit = () => {
       if (!subject.trim() || !message.trim()) { toast.error("Isi semua field"); return; }
-      createMutation.mutate({ data: { subject, message, priority } }, {
+      createMutation.mutate({ data: { subject, message, priority: priority as "low" | "medium" | "high" } }, {
         onSuccess: () => { toast.success("Tiket berhasil dibuat!"); setShowForm(false); setSubject(""); setMessage(""); setPriority("medium"); refetch(); },
         onError: (err: any) => toast.error(err?.message || "Gagal membuat tiket"),
       });

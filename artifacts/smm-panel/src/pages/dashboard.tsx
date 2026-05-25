@@ -102,7 +102,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
               <div className="p-4 space-y-3">
                 {[1,2,3].map(i => <Skeleton key={i} className="h-14 w-full" />)}
               </div>
-            ) : !recent?.orders?.length ? (
+            ) : !(recent as any[])?.length ? (
               <div className="p-10 text-center text-muted-foreground">
                 <ShoppingCart className="w-10 h-10 mx-auto mb-3 opacity-30" />
                 <p className="text-sm">Belum ada order</p>
@@ -114,7 +114,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
               </div>
             ) : (
               <div className="divide-y divide-white/5">
-                {recent.orders.slice(0, 8).map((order: any) => (
+                {(recent as any[]).slice(0, 8).map((order: any) => (
                   <div key={order.id} className="p-4 flex items-center gap-3 hover:bg-white/5 transition-colors">
                     <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center shrink-0 text-xs font-bold text-primary">
                       #{order.id}

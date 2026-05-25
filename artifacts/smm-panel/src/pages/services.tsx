@@ -118,8 +118,8 @@ import { useState, useMemo } from "react";
                   <option value="" className="bg-[#0f0f1a]">
                     {isLoadingCategories ? "Memuat kategori..." : "Pilih Kategori"}
                   </option>
-                  {(categories as string[] | undefined)?.map((cat) => (
-                    <option key={cat} value={cat} className="bg-[#0f0f1a]">{cat}</option>
+                  {(categories as any[] | undefined)?.map((cat) => (
+                    <option key={cat.name} value={cat.name} className="bg-[#0f0f1a]">{cat.name}</option>
                   ))}
                 </select>
                 <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none text-muted-foreground" />

@@ -47,7 +47,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
     const handleBuy = (appId: string, appName: string) => {
       setOrderingAppId(appId);
       buyMutation.mutate(
-        { data: { appId, country: selectedCountry! } },
+        { data: { appId: parseInt(appId, 10), country: selectedCountry! } },
         {
           onSuccess: () => {
             toast.success(`Nomor ${appName} berhasil dipesan!`);

@@ -31,7 +31,7 @@ import { useState, useEffect } from "react";
     const createMutation = useCreateDeposit();
     const { data: history, refetch: refetchHistory } = useListDeposits();
     const { data: activeDeposit } = useGetDeposit(activeDepositId as number, {
-      query: { enabled: !!activeDepositId, refetchInterval: activeDepositId ? 5000 : false }
+      query: { enabled: !!activeDepositId, refetchInterval: activeDepositId ? 5000 : false } as any
     });
 
     useEffect(() => {
@@ -185,8 +185,8 @@ import { useState, useEffect } from "react";
                   <div className="p-3 bg-white rounded-2xl shadow-xl">
                     <img
                       src={
-                        activeDeposit?.qrCode
-                          ? activeDeposit.qrCode
+                        (activeDeposit as any)?.qrisImageUrl ?? (activeDeposit as any)?.qrisCode
+                          ? ((activeDeposit as any).qrisImageUrl ?? (activeDeposit as any).qrisCode)
                           : "/qris.jpg"
                       }
                       alt="QRIS Code"
@@ -206,13 +206,13 @@ import { useState, useEffect } from "react";
                   </div>
                 </div>
 
-                {activeDeposit?.paymentCode && (
+                {(activeDeposit as any)?.paymentCode && (
                   <div className="rounded-xl bg-white/5 border border-white/10 p-3 flex items-center justify-between">
                     <div>
                       <div className="text-xs text-muted-foreground mb-1">Kode Pembayaran</div>
-                      <div className="font-mono text-sm font-semibold">{activeDeposit.paymentCode}</div>
+                      <div className="font-mono text-sm font-semibold">{(activeDeposit as any).paymentCode}</div>
                     </div>
-                    <button onClick={() => copyText(activeDeposit.paymentCode!)} className="p-2 rounded-lg hover:bg-white/10 transition-colors">
+                    <button onClick={() => copyText((activeDeposit as any).paymentCode)} className="p-2 rounded-lg hover:bg-white/10 transition-colors">
                       <Copy className="w-4 h-4 text-muted-foreground" />
                     </button>
                   </div>

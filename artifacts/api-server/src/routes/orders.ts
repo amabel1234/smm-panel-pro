@@ -3,6 +3,7 @@ import { eq, and, desc, sql } from "drizzle-orm";
 import { db, ordersTable, servicesTable, usersTable, transactionsTable, notificationsTable } from "@workspace/db";
 import { requireAuth, type AuthRequest } from "../middlewares/requireAuth";
 import { CreateOrderBody } from "@workspace/api-zod";
+import { sendToUser } from "../ws";
 
 const router: IRouter = Router();
 
@@ -97,10 +98,20 @@ router.post("/orders", requireAuth, async (req: AuthRequest, res): Promise<void>
 
   await db.insert(notificationsTable).values({
     userId: req.userId!,
-    title: "Order Placed",
-    message: `Order #${order.id} for ${service.name} has been placed successfully.`,
+    title: "Order Dibuat",
+    message: `Order #${order.id} untuk ${service.name} berhasil dibuat! Sedang diproses...`,
     type: "success",
   });
+
+  sendToUser(req.userId!, {
+    type: "notification",
+    title: "Order Berhasil!",
+    message: `Order #${order.id} untuk ${service.name} sedang diproses.`,
+    notifType: "success",
+  });
+
+  sendToUser(req.userId!, { type: "order_update" });
+  sendToUser(req.userId!, { type: "balance_update" });
 
   res.status(201).json({
     id: order.id, serviceId: order.serviceId, serviceName: order.serviceName,

@@ -34,7 +34,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 
   export default function Orders() {
     const [status, setStatus] = useState<string>("");
-    const { data, isLoading } = useListOrders({ status: status || undefined }, { query: { refetchInterval: 30000 } });
+    const { data, isLoading } = useListOrders({ status: status || undefined }, { query: { refetchInterval: 30000 } as any });
     const refillMutation = useRefillOrder();
 
     const handleRefill = (id: number) => {
