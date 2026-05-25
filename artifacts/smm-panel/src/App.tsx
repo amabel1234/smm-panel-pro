@@ -18,6 +18,7 @@ import { Switch, Route, Router as WouterRouter } from "wouter";
   import Notifications from "@/pages/notifications";
   import Referral from "@/pages/referral";
   import Profile from "@/pages/profile";
+import Contact from "@/pages/contact";
   import AdminDashboard from "@/pages/admin/dashboard";
   import AdminUsers from "@/pages/admin/users";
   import AdminServices from "@/pages/admin/services";
@@ -205,6 +206,7 @@ import { Switch, Route, Router as WouterRouter } from "wouter";
         <Route path="/notifications"><ProtectedRoute><Notifications /></ProtectedRoute></Route>
         <Route path="/referral"><ProtectedRoute><Referral /></ProtectedRoute></Route>
         <Route path="/profile"><ProtectedRoute><Profile /></ProtectedRoute></Route>
+        <Route path="/contact"><ProtectedRoute><Contact /></ProtectedRoute></Route>
         <Route path="/admin/dashboard"><AdminRoute><AdminDashboard /></AdminRoute></Route>
         <Route path="/admin/users"><AdminRoute><AdminUsers /></AdminRoute></Route>
         <Route path="/admin/services"><AdminRoute><AdminServices /></AdminRoute></Route>
