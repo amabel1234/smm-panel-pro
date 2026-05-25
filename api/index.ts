@@ -2,12 +2,10 @@ import express, { type Express, Router, type Request, type Response, type NextFu
 import cors from "cors";
 import bcrypt from "bcryptjs";
 import { eq, and, desc, sql, ilike } from "drizzle-orm";
-import { drizzle } from "drizzle-orm/node-postgres";
-import pg from "pg";
+import { drizzle } from "drizzle-orm/neon-http";
+import { neon } from "@neondatabase/serverless";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
-
-const { Pool } = pg;
 
 // ── Schema (inline to avoid workspace import issues) ─────────────────────────
 import { pgTable, text, serial, timestamp, numeric, integer, boolean, jsonb } from "drizzle-orm/pg-core";
@@ -161,23 +159,14 @@ const nokosNumbersTable = pgTable("nokos_numbers", {
 });
 
 // ── DB ────────────────────────────────────────────────────────────────────────
-let pool: InstanceType<typeof Pool>;
-let db: ReturnType<typeof drizzle>;
-try {
-  pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
-    ssl: { rejectUnauthorized: false },
-  });
-  db = drizzle(pool, {
+const sqlConn = neon(process.env.DATABASE_URL as string);
+const db = drizzle(sqlConn, {
   schema: {
     usersTable, servicesCategoryTable, servicesTable, favoriteServicesTable,
     ordersTable, depositsTable, transactionsTable, ticketsTable,
     notificationsTable, referralsTable, nokosAppsTable, nokosNumbersTable,
   }
-  });
-} catch (e) {
-  console.error('DB init error:', e);
-}
+});
 
 // ── JWT ───────────────────────────────────────────────────────────────────────
 const SECRET = process.env.SESSION_SECRET ?? "smm-panel-secret-key";
