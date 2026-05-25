@@ -1,254 +1,274 @@
 import { useState } from "react";
-import { AppLayout } from "@/components/layout/AppLayout";
-import { useListServices, useListServiceCategories, useCreateOrder } from "@workspace/api-client-react";
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
-import { formatRupiah } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Slider } from "@/components/ui/slider";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { toast } from "sonner";
-import { Search, Heart, Loader2 } from "lucide-react";
-import { SiInstagram, SiTiktok, SiYoutube, SiFacebook, SiTelegram, SiWhatsapp, SiX, SiSpotify } from "react-icons/si";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Badge } from "@/components/ui/badge";
+  import { AppLayout } from "@/components/layout/AppLayout";
+  import { useListServices, useListServiceCategories, useCreateOrder, useGetMe } from "@workspace/api-client-react";
+  import { Skeleton } from "@/components/ui/skeleton";
+  import { formatRupiah } from "@/lib/utils";
+  import { toast } from "sonner";
+  import { Search, Loader2, ShoppingCart, X, ChevronRight, Star, Zap, Info } from "lucide-react";
+  import { SiInstagram, SiTiktok, SiYoutube, SiFacebook, SiTelegram, SiWhatsapp, SiX, SiSpotify } from "react-icons/si";
 
-export default function Services() {
-  const [search, setSearch] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState<string>("");
-  const [orderModalOpen, setOrderModalOpen] = useState(false);
-  const [selectedService, setSelectedService] = useState<any>(null);
-  const [orderLink, setOrderLink] = useState("");
-  const [orderQuantity, setOrderQuantity] = useState(1000);
+  function getPlatformIcon(name: string) {
+    const n = (name || "").toLowerCase();
+    if (n.includes("instagram")) return <SiInstagram className="text-pink-400 w-4 h-4" />;
+    if (n.includes("tiktok"))    return <SiTiktok    className="text-white w-4 h-4" />;
+    if (n.includes("youtube"))   return <SiYoutube   className="text-red-400 w-4 h-4" />;
+    if (n.includes("facebook"))  return <SiFacebook  className="text-blue-400 w-4 h-4" />;
+    if (n.includes("telegram"))  return <SiTelegram  className="text-sky-400 w-4 h-4" />;
+    if (n.includes("whatsapp"))  return <SiWhatsapp  className="text-green-400 w-4 h-4" />;
+    if (n.includes("twitter") || n.includes(" x ")) return <SiX className="text-white w-4 h-4" />;
+    if (n.includes("spotify"))   return <SiSpotify   className="text-green-500 w-4 h-4" />;
+    return <Zap className="text-primary w-4 h-4" />;
+  }
 
-  const { data: services, isLoading: isLoadingServices } = useListServices({ 
-    search: search || undefined,
-    category: selectedCategory || undefined
-  });
-  
-  const { data: categories, isLoading: isLoadingCategories } = useListServiceCategories();
-  const createOrderMutation = useCreateOrder();
+  function getPlatformBorder(name: string) {
+    const n = (name || "").toLowerCase();
+    if (n.includes("instagram")) return "border-pink-500/20 hover:border-pink-500/40";
+    if (n.includes("tiktok"))    return "border-gray-500/20 hover:border-gray-400/40";
+    if (n.includes("youtube"))   return "border-red-500/20 hover:border-red-500/40";
+    if (n.includes("facebook"))  return "border-blue-500/20 hover:border-blue-500/40";
+    if (n.includes("telegram"))  return "border-sky-500/20 hover:border-sky-500/40";
+    return "border-white/10 hover:border-primary/30";
+  }
 
-  const handleOrderClick = (service: any) => {
-    setSelectedService(service);
-    setOrderQuantity(Math.max(service.minOrder, Math.min(1000, service.maxOrder)));
-    setOrderLink("");
-    setOrderModalOpen(true);
-  };
+  export default function Services() {
+    const [search, setSearch] = useState("");
+    const [selectedCategory, setSelectedCategory] = useState<string>("");
+    const [orderModalOpen, setOrderModalOpen] = useState(false);
+    const [selectedService, setSelectedService] = useState<any>(null);
+    const [orderLink, setOrderLink] = useState("");
+    const [orderQuantity, setOrderQuantity] = useState(1000);
 
-  const handleCreateOrder = () => {
-    if (!orderLink) {
-      toast.error("Please enter a link");
-      return;
-    }
-    
-    createOrderMutation.mutate({
-      data: {
-        serviceId: selectedService.id,
-        link: orderLink,
-        quantity: orderQuantity
-      }
-    }, {
-      onSuccess: () => {
-        toast.success("Order created successfully!");
-        setOrderModalOpen(false);
-      },
-      onError: (err: any) => {
-        toast.error(err.message || "Failed to create order");
-      }
+    const { data: services, isLoading: isLoadingServices } = useListServices({
+      search: search || undefined,
+      category: selectedCategory || undefined,
     });
-  };
+    const { data: categories, isLoading: isLoadingCategories } = useListServiceCategories();
+    const { data: me } = useGetMe();
+    const createOrderMutation = useCreateOrder();
 
-  const calculatePrice = () => {
-    if (!selectedService) return 0;
-    return (selectedService.price / 1000) * orderQuantity;
-  };
+    const handleOrder = (service: any) => {
+      setSelectedService(service);
+      setOrderQuantity(Math.max(service.minOrder ?? 100, Math.min(1000, service.maxOrder ?? 999999)));
+      setOrderLink("");
+      setOrderModalOpen(true);
+    };
 
-  const getPlatformIcon = (platform: string) => {
-    const p = platform.toLowerCase();
-    if (p.includes("instagram")) return <SiInstagram className="text-pink-500" />;
-    if (p.includes("tiktok")) return <SiTiktok className="text-white" />;
-    if (p.includes("youtube")) return <SiYoutube className="text-red-500" />;
-    if (p.includes("facebook")) return <SiFacebook className="text-blue-500" />;
-    if (p.includes("telegram")) return <SiTelegram className="text-blue-400" />;
-    if (p.includes("whatsapp")) return <SiWhatsapp className="text-green-500" />;
-    if (p.includes("twitter") || p.includes("x")) return <SiX className="text-white" />;
-    if (p.includes("spotify")) return <SiSpotify className="text-green-500" />;
-    return null;
-  };
+    const totalPrice = selectedService
+      ? Math.round((selectedService.price / 1000) * orderQuantity)
+      : 0;
 
-  return (
-    <AppLayout>
-      <div className="flex flex-col md:flex-row gap-6">
-        {/* Sidebar Categories */}
-        <div className="w-full md:w-64 shrink-0 space-y-4">
-          <Card className="glass border-primary/20 sticky top-24">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg">Categories</CardTitle>
-            </CardHeader>
-            <CardContent className="p-0">
-              <ScrollArea className="h-[400px]">
-                <div className="flex flex-col p-2 space-y-1">
+    const handleSubmitOrder = () => {
+      if (!orderLink.trim()) { toast.error("Masukkan link target terlebih dahulu"); return; }
+      if (orderQuantity < (selectedService.minOrder ?? 1)) { toast.error("Jumlah di bawah minimum"); return; }
+      if (orderQuantity > (selectedService.maxOrder ?? 999999)) { toast.error("Jumlah melebihi maksimum"); return; }
+      if ((me as any)?.balance < totalPrice) { toast.error("Saldo tidak cukup. Silakan top up terlebih dahulu."); return; }
+      createOrderMutation.mutate(
+        { data: { serviceId: selectedService.id, link: orderLink, quantity: orderQuantity } },
+        {
+          onSuccess: () => { toast.success("Order berhasil dibuat!"); setOrderModalOpen(false); },
+          onError: (err: any) => toast.error(err?.message || "Gagal membuat order"),
+        }
+      );
+    };
+
+    return (
+      <AppLayout>
+        <div className="space-y-4">
+          <div>
+            <h1 className="text-2xl font-bold font-display">Order Layanan</h1>
+            <p className="text-muted-foreground text-sm mt-0.5">Pilih layanan sosial media yang kamu butuhkan</p>
+          </div>
+
+          <div className="flex flex-col md:flex-row gap-4">
+            {/* Sidebar Kategori */}
+            <div className="w-full md:w-52 shrink-0">
+              <div className="glass rounded-2xl border border-white/10 overflow-hidden md:sticky md:top-20">
+                <div className="p-3 border-b border-white/10">
+                  <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Kategori</span>
+                </div>
+                <div className="p-2 max-h-64 md:max-h-[65vh] overflow-y-auto space-y-0.5">
                   <button
                     onClick={() => setSelectedCategory("")}
-                    className={`text-left px-3 py-2 rounded-md text-sm transition-colors ${!selectedCategory ? 'bg-primary/20 text-primary font-medium' : 'hover:bg-muted text-muted-foreground'}`}
+                    className={`w-full text-left px-3 py-2 rounded-xl text-sm transition-colors flex items-center justify-between ${!selectedCategory ? "bg-primary/15 text-primary font-semibold" : "text-muted-foreground hover:bg-white/5 hover:text-foreground"}`}
                   >
-                    All Services
+                    <span>🌐 Semua Layanan</span>
+                    {!selectedCategory && <ChevronRight className="w-3 h-3" />}
                   </button>
-                  {isLoadingCategories ? (
-                    <div className="space-y-2 p-2">
-                      {[1, 2, 3, 4, 5].map(i => <Skeleton key={i} className="h-8 w-full" />)}
-                    </div>
-                  ) : (
-                    categories?.map(cat => (
+                  {isLoadingCategories ? Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-8 mx-1 my-0.5" />) : (
+                    (categories as string[] | undefined)?.map((cat) => (
                       <button
-                        key={cat.id}
-                        onClick={() => setSelectedCategory(cat.name)}
-                        className={`text-left px-3 py-2 rounded-md text-sm transition-colors flex items-center justify-between ${selectedCategory === cat.name ? 'bg-primary/20 text-primary font-medium' : 'hover:bg-muted text-muted-foreground'}`}
+                        key={cat}
+                        onClick={() => setSelectedCategory(cat)}
+                        className={`w-full text-left px-3 py-2 rounded-xl text-sm transition-colors flex items-center gap-2 ${selectedCategory === cat ? "bg-primary/15 text-primary font-semibold" : "text-muted-foreground hover:bg-white/5 hover:text-foreground"}`}
                       >
-                        <div className="flex items-center gap-2">
-                          <span className="w-4 h-4 flex items-center justify-center">{getPlatformIcon(cat.platform)}</span>
-                          <span className="truncate">{cat.name}</span>
-                        </div>
-                        <Badge variant="secondary" className="text-xs bg-background/50">{cat.serviceCount}</Badge>
+                        <span className="shrink-0">{getPlatformIcon(cat)}</span>
+                        <span className="truncate">{cat}</span>
+                        {selectedCategory === cat && <ChevronRight className="w-3 h-3 ml-auto" />}
                       </button>
                     ))
                   )}
                 </div>
-              </ScrollArea>
-            </CardContent>
-          </Card>
-        </div>
+              </div>
+            </div>
 
-        {/* Main Content */}
-        <div className="flex-1 space-y-6">
-          <div className="flex flex-col md:flex-row justify-between gap-4">
-            <h1 className="text-3xl font-bold font-display">Services</h1>
-            <div className="relative w-full md:w-72">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input 
-                placeholder="Search services..." 
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="pl-9 glass"
-              />
-            </div>
-          </div>
-          
-          {isLoadingServices ? (
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-              {[1, 2, 3, 4, 5, 6].map(i => (
-                <Skeleton key={i} className="h-48 w-full rounded-xl" />
-              ))}
-            </div>
-          ) : services?.length === 0 ? (
-            <div className="text-center p-12 glass rounded-xl">
-              <p className="text-muted-foreground text-lg">No services found matching your criteria.</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-              {services?.map(service => (
-                <Card key={service.id} className="glass hover-elevate transition-all border-border/50 hover:border-primary/30 flex flex-col">
-                  <CardHeader className="pb-2">
-                    <div className="flex justify-between items-start gap-4">
-                      <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded bg-muted/50 flex items-center justify-center shrink-0">
-                          {getPlatformIcon(service.platform)}
+            {/* Daftar layanan */}
+            <div className="flex-1 space-y-3">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <input
+                  type="text"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Cari layanan..."
+                  className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-white/5 border border-white/10 focus:border-primary/50 focus:outline-none text-sm transition-colors"
+                />
+              </div>
+
+              {isLoadingServices ? (
+                Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} className="h-20 rounded-xl" />)
+              ) : !(services as any[] | undefined)?.length ? (
+                <div className="glass rounded-2xl border border-white/10 p-10 text-center">
+                  <Search className="w-10 h-10 mx-auto mb-3 opacity-30" />
+                  <p className="text-muted-foreground text-sm">Tidak ada layanan ditemukan</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {(services as any[]).map((svc) => (
+                    <div
+                      key={svc.id}
+                      onClick={() => handleOrder(svc)}
+                      className={`glass rounded-xl border p-4 cursor-pointer hover:bg-white/5 transition-all group ${getPlatformBorder(svc.category || svc.name)}`}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-start gap-3 flex-1 min-w-0">
+                          <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center shrink-0 mt-0.5">
+                            {getPlatformIcon(svc.category || svc.name)}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-0.5">
+                              <span className="text-xs text-muted-foreground font-mono">#{svc.id}</span>
+                              {svc.isFeatured && <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />}
+                            </div>
+                            <div className="text-sm font-medium line-clamp-2 leading-tight">{svc.name}</div>
+                            <div className="flex items-center gap-3 mt-1.5 text-xs text-muted-foreground">
+                              <span>Min: <strong className="text-foreground">{(svc.minOrder ?? 0).toLocaleString("id-ID")}</strong></span>
+                              <span>Max: <strong className="text-foreground">{(svc.maxOrder ?? 0).toLocaleString("id-ID")}</strong></span>
+                            </div>
+                          </div>
                         </div>
-                        <CardTitle className="text-base leading-tight line-clamp-2">{service.name}</CardTitle>
-                      </div>
-                      <Button variant="ghost" size="icon" className="shrink-0 h-8 w-8 text-muted-foreground hover:text-red-500">
-                        <Heart className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="flex-1 pb-4">
-                    <div className="grid grid-cols-2 gap-2 text-sm">
-                      <div className="bg-muted/30 p-2 rounded-md">
-                        <p className="text-xs text-muted-foreground mb-1">Price / 1000</p>
-                        <p className="font-semibold text-primary">{formatRupiah(service.price)}</p>
-                      </div>
-                      <div className="bg-muted/30 p-2 rounded-md">
-                        <p className="text-xs text-muted-foreground mb-1">Min / Max</p>
-                        <p className="font-medium">{service.minOrder} / {service.maxOrder}</p>
+                        <div className="text-right shrink-0">
+                          <div className="text-primary font-bold text-sm">{formatRupiah(svc.price)}</div>
+                          <div className="text-xs text-muted-foreground">per 1000</div>
+                          <div className="mt-2">
+                            <span className="text-xs px-2.5 py-1 rounded-lg shimmer-btn text-white font-medium opacity-0 group-hover:opacity-100 transition-opacity">
+                              Order →
+                            </span>
+                          </div>
+                        </div>
                       </div>
                     </div>
-                    {service.description && (
-                      <p className="text-xs text-muted-foreground mt-3 line-clamp-2">{service.description}</p>
-                    )}
-                  </CardContent>
-                  <CardFooter className="pt-0 border-t border-border/30 mt-auto flex justify-between items-center bg-muted/10">
-                    <div className="flex gap-2 py-3">
-                      {service.refillAvailable && <Badge variant="outline" className="text-xs border-blue-500/30 text-blue-400">Refill</Badge>}
-                      <Badge variant="outline" className="text-xs">{service.platform}</Badge>
-                    </div>
-                    <Button onClick={() => handleOrderClick(service)} size="sm" className="neon-glow text-xs">Order Now</Button>
-                  </CardFooter>
-                </Card>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-
-      <Dialog open={orderModalOpen} onOpenChange={setOrderModalOpen}>
-        <DialogContent className="glass border-primary/20 sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Create Order</DialogTitle>
-            <DialogDescription className="line-clamp-2 mt-2">
-              {selectedService?.name}
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="space-y-6 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="link">Target Link</Label>
-              <Input 
-                id="link" 
-                placeholder="https://..." 
-                value={orderLink}
-                onChange={(e) => setOrderLink(e.target.value)}
-                className="bg-background"
-              />
-            </div>
-            
-            <div className="space-y-4">
-              <div className="flex justify-between items-end">
-                <Label htmlFor="quantity">Quantity</Label>
-                <span className="text-lg font-bold text-primary">{orderQuantity}</span>
-              </div>
-              <Slider
-                id="quantity"
-                min={selectedService?.minOrder || 10}
-                max={selectedService?.maxOrder || 10000}
-                step={10}
-                value={[orderQuantity]}
-                onValueChange={(v) => setOrderQuantity(v[0])}
-                className="py-4"
-              />
-              <div className="flex justify-between text-xs text-muted-foreground">
-                <span>Min: {selectedService?.minOrder}</span>
-                <span>Max: {selectedService?.maxOrder}</span>
-              </div>
-            </div>
-
-            <div className="p-4 bg-muted/50 rounded-lg border border-border flex justify-between items-center">
-              <span className="font-medium">Total Charge:</span>
-              <span className="text-xl font-bold text-primary neon-text">{formatRupiah(calculatePrice())}</span>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
-          
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setOrderModalOpen(false)}>Cancel</Button>
-            <Button onClick={handleCreateOrder} disabled={createOrderMutation.isPending} className="neon-glow">
-              {createOrderMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-              Place Order
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </AppLayout>
-  );
-}
+        </div>
+
+        {/* Modal Order */}
+        {orderModalOpen && selectedService && (
+          <div
+            className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-0 md:p-4 bg-black/60 backdrop-blur-sm"
+            onClick={(e) => { if (e.target === e.currentTarget) setOrderModalOpen(false); }}
+          >
+            <div className="glass rounded-t-2xl md:rounded-2xl border border-primary/30 w-full md:max-w-md p-5 space-y-4 shadow-2xl">
+              <div className="flex items-start justify-between">
+                <div className="flex-1 pr-2">
+                  <div className="text-xs text-muted-foreground mb-0.5 flex items-center gap-1.5">
+                    {getPlatformIcon(selectedService.category || selectedService.name)}
+                    <span>{selectedService.category}</span>
+                    <span className="font-mono">#{selectedService.id}</span>
+                  </div>
+                  <h2 className="font-semibold text-sm line-clamp-2">{selectedService.name}</h2>
+                </div>
+                <button onClick={() => setOrderModalOpen(false)} className="p-1.5 rounded-lg hover:bg-white/10 shrink-0">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { label: "Harga/1000", value: formatRupiah(selectedService.price) },
+                  { label: "Min Order",  value: (selectedService.minOrder ?? 0).toLocaleString("id-ID") },
+                  { label: "Max Order",  value: (selectedService.maxOrder ?? 0).toLocaleString("id-ID") },
+                ].map((s) => (
+                  <div key={s.label} className="bg-white/5 rounded-xl p-2.5 text-center">
+                    <div className="text-xs text-muted-foreground">{s.label}</div>
+                    <div className="text-xs font-semibold mt-0.5">{s.value}</div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium">Link Target</label>
+                <input
+                  type="url"
+                  value={orderLink}
+                  onChange={(e) => setOrderLink(e.target.value)}
+                  placeholder="https://instagram.com/username"
+                  className="w-full px-3 py-2.5 rounded-xl bg-white/5 border border-white/10 focus:border-primary/50 focus:outline-none text-sm"
+                  autoFocus
+                />
+                <p className="text-xs text-muted-foreground flex items-center gap-1">
+                  <Info className="w-3 h-3" /> Pastikan akun target bersifat publik
+                </p>
+              </div>
+
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-sm font-medium">Jumlah</label>
+                  <span className="text-xs text-muted-foreground">
+                    {(selectedService.minOrder ?? 0).toLocaleString("id-ID")} – {(selectedService.maxOrder ?? 0).toLocaleString("id-ID")}
+                  </span>
+                </div>
+                <input
+                  type="number"
+                  value={orderQuantity}
+                  onChange={(e) => setOrderQuantity(Math.max(selectedService.minOrder ?? 1, Math.min(selectedService.maxOrder ?? 999999, parseInt(e.target.value) || 0)))}
+                  min={selectedService.minOrder ?? 1}
+                  max={selectedService.maxOrder ?? 999999}
+                  className="w-full px-3 py-2.5 rounded-xl bg-white/5 border border-white/10 focus:border-primary/50 focus:outline-none text-sm"
+                />
+                <div className="flex gap-2">
+                  {[100, 500, 1000, 5000].filter(q => q >= (selectedService.minOrder ?? 0) && q <= (selectedService.maxOrder ?? 999999)).map(q => (
+                    <button key={q} onClick={() => setOrderQuantity(q)}
+                      className={`flex-1 py-1 rounded-lg text-xs border transition-all ${orderQuantity === q ? "gradient-bg text-white border-transparent" : "bg-white/5 border-white/10 text-muted-foreground hover:bg-white/10"}`}>
+                      {q >= 1000 ? q / 1000 + "K" : q}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="rounded-xl bg-primary/10 border border-primary/20 p-3 flex justify-between items-center">
+                <div>
+                  <div className="text-xs text-muted-foreground">Total Harga</div>
+                  <div className="text-xs text-muted-foreground">Saldo: {formatRupiah((me as any)?.balance ?? 0)}</div>
+                </div>
+                <span className="font-bold text-primary text-xl">{formatRupiah(totalPrice)}</span>
+              </div>
+
+              <button
+                onClick={handleSubmitOrder}
+                disabled={createOrderMutation.isPending}
+                className="w-full py-3 rounded-xl shimmer-btn text-white font-semibold neon-glow hover:opacity-90 transition-all disabled:opacity-60 flex items-center justify-center gap-2"
+              >
+                {createOrderMutation.isPending
+                  ? <><Loader2 className="w-4 h-4 animate-spin" /> Memproses...</>
+                  : <><ShoppingCart className="w-4 h-4" /> Buat Order — {formatRupiah(totalPrice)}</>}
+              </button>
+            </div>
+          </div>
+        )}
+      </AppLayout>
+    );
+  }
+  
