@@ -161,17 +161,23 @@ const nokosNumbersTable = pgTable("nokos_numbers", {
 });
 
 // ── DB ────────────────────────────────────────────────────────────────────────
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false },
-});
-const db = drizzle(pool, {
+let pool: InstanceType<typeof Pool>;
+let db: ReturnType<typeof drizzle>;
+try {
+  pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl: { rejectUnauthorized: false },
+  });
+  db = drizzle(pool, {
   schema: {
     usersTable, servicesCategoryTable, servicesTable, favoriteServicesTable,
     ordersTable, depositsTable, transactionsTable, ticketsTable,
     notificationsTable, referralsTable, nokosAppsTable, nokosNumbersTable,
   }
-});
+  });
+} catch (e) {
+  console.error('DB init error:', e);
+}
 
 // ── JWT ───────────────────────────────────────────────────────────────────────
 const SECRET = process.env.SESSION_SECRET ?? "smm-panel-secret-key";
@@ -567,5 +573,11 @@ function serializeOrder(o: any) {
 
 // ── Mount & Export ────────────────────────────────────────────────────────────
 app.use("/api", router);
+
+// Express 5 global error handler
+app.use((err: any, _req: any, res: any, _next: any) => {
+  console.error("API Error:", err?.message ?? err);
+  res.status(err?.status ?? 500).json({ error: err?.message ?? "Internal server error" });
+});
 
 export default app;
