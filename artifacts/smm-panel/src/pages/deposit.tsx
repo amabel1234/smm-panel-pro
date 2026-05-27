@@ -1,298 +1,339 @@
 import { useState, useEffect } from "react";
-  import { AppLayout } from "@/components/layout/AppLayout";
-  import { useCreateDeposit, useListDeposits, useGetDeposit } from "@workspace/api-client-react";
-  import { formatRupiah } from "@/lib/utils";
-  import { toast } from "sonner";
-  import { QrCode, Copy, Loader2, CheckCircle2, Clock, XCircle, Wallet, TrendingUp, ArrowDownCircle } from "lucide-react";
+import { AppLayout } from "@/components/layout/AppLayout";
+import { useCreateDeposit, useListDeposits, useGetDeposit, customFetch } from "@workspace/api-client-react";
+import { formatRupiah } from "@/lib/utils";
+import { toast } from "sonner";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { QrCode, Copy, Loader2, CheckCircle2, Clock, XCircle, Wallet, TrendingUp, ArrowDownCircle, Trash2 } from "lucide-react";
 
-  const QUICK_AMOUNTS = [5000, 10000, 25000, 50000, 100000, 250000];
-  const MIN_DEPOSIT = 5000;
+const QUICK_AMOUNTS = [5000, 10000, 25000, 50000, 100000, 250000];
+const MIN_DEPOSIT = 5000;
 
-  function StatusBadge({ status }: { status: string }) {
-    const map: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
-      pending:   { label: "Menunggu",   color: "text-yellow-400 bg-yellow-400/10 border-yellow-400/30", icon: <Clock className="w-3 h-3" /> },
-      completed: { label: "Berhasil",   color: "text-green-400 bg-green-400/10 border-green-400/30",   icon: <CheckCircle2 className="w-3 h-3" /> },
-      failed:    { label: "Gagal",      color: "text-red-400 bg-red-400/10 border-red-400/30",          icon: <XCircle className="w-3 h-3" /> },
-      expired:   { label: "Kedaluarsa", color: "text-gray-400 bg-gray-400/10 border-gray-400/30",      icon: <XCircle className="w-3 h-3" /> },
-    };
-    const s = map[status] ?? map.pending;
-    return (
-      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border ${s.color}`}>
-        {s.icon} {s.label}
-      </span>
-    );
-  }
+function StatusBadge({ status }: { status: string }) {
+  const map: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
+    pending:   { label: "Menunggu",   color: "text-yellow-400 bg-yellow-400/10 border-yellow-400/30", icon: <Clock className="w-3 h-3" /> },
+    completed: { label: "Berhasil",   color: "text-green-400 bg-green-400/10 border-green-400/30",   icon: <CheckCircle2 className="w-3 h-3" /> },
+    failed:    { label: "Gagal",      color: "text-red-400 bg-red-400/10 border-red-400/30",          icon: <XCircle className="w-3 h-3" /> },
+    expired:   { label: "Kedaluarsa", color: "text-gray-400 bg-gray-400/10 border-gray-400/30",      icon: <XCircle className="w-3 h-3" /> },
+  };
+  const s = map[status] ?? map.pending;
+  return (
+    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border ${s.color}`}>
+      {s.icon} {s.label}
+    </span>
+  );
+}
 
-  export default function Deposit() {
-    const [amount, setAmount] = useState<string>("");
-    const [activeDepositId, setActiveDepositId] = useState<number | null>(null);
-    const [showQris, setShowQris] = useState(false);
+export default function Deposit() {
+  const [amount, setAmount] = useState<string>("");
+  const [activeDepositId, setActiveDepositId] = useState<number | null>(null);
+  const [showQris, setShowQris] = useState(false);
+  const [paidAmount, setPaidAmount] = useState<number>(0);
+  const [qrisImageUrl, setQrisImageUrl] = useState<string>("");
+  const [deletingId, setDeletingId] = useState<number | null>(null);
 
-    const createMutation = useCreateDeposit();
-    const { data: history, refetch: refetchHistory } = useListDeposits();
-    const { data: activeDeposit } = useGetDeposit(activeDepositId as number, {
-      query: { enabled: !!activeDepositId, refetchInterval: activeDepositId ? 5000 : false }
+  const queryClient = useQueryClient();
+  const createMutation = useCreateDeposit();
+  const { data: history, refetch: refetchHistory } = useListDeposits();
+  const { data: activeDeposit } = useGetDeposit(activeDepositId as number, {
+    query: { enabled: !!activeDepositId, refetchInterval: activeDepositId ? 5000 : false }
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: number) =>
+      customFetch(`/api/deposits/${id}`, { method: "DELETE" }),
+    onSuccess: () => {
+      toast.success("Riwayat deposit dihapus");
+      refetchHistory();
+      queryClient.invalidateQueries({ queryKey: ["deposits"] });
+    },
+    onError: () => toast.error("Gagal menghapus riwayat"),
+    onSettled: () => setDeletingId(null),
+  });
+
+  useEffect(() => {
+    if (!activeDeposit) return;
+    if (activeDeposit.qrisImageUrl && !qrisImageUrl) {
+      setQrisImageUrl(activeDeposit.qrisImageUrl);
+    }
+    if (activeDeposit.status === "completed") {
+      toast.success("Deposit berhasil! Saldo telah ditambahkan.");
+      setActiveDepositId(null);
+      setShowQris(false);
+      refetchHistory();
+    } else if (activeDeposit.status === "failed" || activeDeposit.status === "expired") {
+      toast.error("Deposit " + (activeDeposit.status === "failed" ? "gagal" : "kedaluarsa"));
+      setActiveDepositId(null);
+      setShowQris(false);
+      refetchHistory();
+    }
+  }, [activeDeposit?.status, activeDeposit?.qrisImageUrl]);
+
+  const numericAmount = parseInt(amount.replace(/\D/g, "") || "0");
+
+  const handleCreate = () => {
+    if (!numericAmount || numericAmount < MIN_DEPOSIT) {
+      toast.error("Minimum deposit Rp 5.000");
+      return;
+    }
+    const finalAmount = numericAmount;
+    createMutation.mutate({ data: { amount: finalAmount, method: "qris" } }, {
+      onSuccess: (res) => {
+        toast.success("Silakan scan QR QRIS di bawah untuk membayar");
+        setActiveDepositId(res.id);
+        setPaidAmount(finalAmount);
+        setQrisImageUrl(res.qrisImageUrl ?? "");
+        setShowQris(true);
+        setAmount("");
+        refetchHistory();
+      },
+      onError: () => {
+        toast.info("Silakan scan QR QRIS di bawah dan konfirmasi ke admin");
+        setPaidAmount(finalAmount);
+        setQrisImageUrl("/qris.jpg");
+        setShowQris(true);
+        setAmount("");
+      },
     });
+  };
 
-    useEffect(() => {
-      if (!activeDeposit) return;
-      if (activeDeposit.status === "completed") {
-        toast.success("Deposit berhasil! Saldo telah ditambahkan.");
-        setActiveDepositId(null);
-        setShowQris(false);
-        refetchHistory();
-      } else if (activeDeposit.status === "failed" || activeDeposit.status === "expired") {
-        toast.error("Deposit " + (activeDeposit.status === "failed" ? "gagal" : "kedaluarsa"));
-        setActiveDepositId(null);
-        setShowQris(false);
-        refetchHistory();
-      }
-    }, [activeDeposit?.status]);
+  const handleDelete = (id: number) => {
+    setDeletingId(id);
+    deleteMutation.mutate(id);
+  };
 
-    const numericAmount = parseInt(amount.replace(/\D/g, "") || "0");
+  const copyText = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast.success("Disalin ke clipboard");
+  };
 
-    const handleCreate = () => {
-      if (!numericAmount || numericAmount < MIN_DEPOSIT) {
-        toast.error("Minimum deposit Rp 5.000");
-        return;
-      }
-      createMutation.mutate({ data: { amount: numericAmount, method: "qris" } }, {
-        onSuccess: (res) => {
-          toast.success("Silakan scan QR QRIS di bawah untuk membayar");
-          setActiveDepositId(res.id);
-          setShowQris(true);
-          setAmount("");
-          refetchHistory();
-        },
-        onError: (err: any) => {
-          // If API fails, still show static QRIS
-          toast.info("Silakan scan QR QRIS di bawah dan konfirmasi ke admin");
-          setShowQris(true);
-          setAmount("");
-        },
-      });
-    };
+  const qrisDisplayUrl = qrisImageUrl || activeDeposit?.qrisImageUrl || "/qris.jpg";
 
-    const copyText = (text: string) => {
-      navigator.clipboard.writeText(text);
-      toast.success("Disalin ke clipboard");
-    };
+  return (
+    <AppLayout>
+      <div className="min-h-screen space-y-6 pb-10">
+        {/* Header */}
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl gradient-bg flex items-center justify-center neon-glow-sm">
+            <Wallet className="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold font-display">Top Up Saldo</h1>
+            <p className="text-muted-foreground text-sm">Isi saldo untuk mulai order layanan</p>
+          </div>
+        </div>
 
-    return (
-      <AppLayout>
-        <div className="min-h-screen space-y-6 pb-10">
-          {/* Header */}
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl gradient-bg flex items-center justify-center neon-glow-sm">
-              <Wallet className="w-5 h-5 text-white" />
+        {/* Stats row */}
+        <div className="grid grid-cols-3 gap-3">
+          {[
+            { icon: TrendingUp, label: "Min. Deposit", value: "Rp 5.000",  color: "text-blue-400" },
+            { icon: CheckCircle2, label: "Proses",     value: "Instan",    color: "text-green-400" },
+            { icon: QrCode,       label: "Metode",     value: "QRIS",      color: "text-purple-400" },
+          ].map((s) => (
+            <div key={s.label} className="glass rounded-xl p-3 border border-white/5 text-center">
+              <s.icon className={`w-5 h-5 ${s.color} mx-auto mb-1`} />
+              <div className="text-xs text-muted-foreground">{s.label}</div>
+              <div className="text-sm font-semibold mt-0.5">{s.value}</div>
             </div>
-            <div>
-              <h1 className="text-2xl font-bold font-display">Top Up Saldo</h1>
-              <p className="text-muted-foreground text-sm">Isi saldo untuk mulai order layanan</p>
+          ))}
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Form deposit */}
+          <div className="glass rounded-2xl border border-white/10 p-5 space-y-5">
+            <div className="flex items-center gap-2">
+              <QrCode className="w-5 h-5 text-primary" />
+              <div>
+                <h2 className="font-semibold">Auto Deposit QRIS</h2>
+                <p className="text-xs text-muted-foreground">Update saldo otomatis 24/7</p>
+              </div>
             </div>
+
+            {/* Amount input */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-muted-foreground">Nominal</label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-medium text-sm">Rp</span>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={numericAmount ? numericAmount.toLocaleString("id-ID") : ""}
+                  onChange={(e) => setAmount(e.target.value.replace(/\D/g, ""))}
+                  placeholder="0"
+                  className="w-full pl-10 pr-4 py-3 rounded-xl bg-white/5 border border-white/10 focus:border-primary/50 focus:outline-none text-lg font-semibold transition-colors"
+                />
+              </div>
+            </div>
+
+            {/* Quick amounts */}
+            <div className="grid grid-cols-3 gap-2">
+              {QUICK_AMOUNTS.map((a) => (
+                <button
+                  key={a}
+                  onClick={() => setAmount(String(a))}
+                  className={`py-2 rounded-xl text-sm font-medium border transition-all hover:scale-105 ${
+                    numericAmount === a
+                      ? "gradient-bg text-white border-transparent neon-glow-sm"
+                      : "bg-white/5 border-white/10 text-muted-foreground hover:border-primary/40 hover:text-foreground"
+                  }`}
+                >
+                  {a >= 1000 ? (a / 1000) + "K" : a}
+                </button>
+              ))}
+            </div>
+
+            {/* Total */}
+            {numericAmount >= MIN_DEPOSIT && (
+              <div className="rounded-xl bg-primary/10 border border-primary/20 p-3 flex justify-between items-center">
+                <span className="text-sm text-muted-foreground">Total Transfer</span>
+                <span className="font-bold text-primary">{formatRupiah(numericAmount)}</span>
+              </div>
+            )}
+
+            <button
+              onClick={handleCreate}
+              disabled={createMutation.isPending || numericAmount < MIN_DEPOSIT}
+              className="w-full py-3 rounded-xl shimmer-btn text-white font-semibold neon-glow hover:opacity-90 transition-all hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:scale-100 flex items-center justify-center gap-2"
+            >
+              {createMutation.isPending
+                ? <><Loader2 className="w-4 h-4 animate-spin" /> Memproses...</>
+                : <><QrCode className="w-4 h-4" /> Tampilkan QR &amp; Bayar</>}
+            </button>
           </div>
 
-          {/* Stats row */}
-          <div className="grid grid-cols-3 gap-3">
-            {[
-              { icon: TrendingUp, label: "Min. Deposit", value: "Rp 5.000",  color: "text-blue-400" },
-              { icon: CheckCircle2, label: "Proses",     value: "Instan",    color: "text-green-400" },
-              { icon: QrCode,       label: "Metode",     value: "QRIS",      color: "text-purple-400" },
-            ].map((s) => (
-              <div key={s.label} className="glass rounded-xl p-3 border border-white/5 text-center">
-                <s.icon className={`w-5 h-5 ${s.color} mx-auto mb-1`} />
-                <div className="text-xs text-muted-foreground">{s.label}</div>
-                <div className="text-sm font-semibold mt-0.5">{s.value}</div>
-              </div>
-            ))}
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Form deposit */}
-            <div className="glass rounded-2xl border border-white/10 p-5 space-y-5">
-              <div className="flex items-center gap-2">
-                <QrCode className="w-5 h-5 text-primary" />
-                <div>
-                  <h2 className="font-semibold">Auto Deposit QRIS</h2>
-                  <p className="text-xs text-muted-foreground">Update saldo otomatis 24/7</p>
-                </div>
+          {/* QR Code panel */}
+          {showQris ? (
+            <div className="glass rounded-2xl border border-primary/30 p-5 space-y-4 neon-glow-sm">
+              <div className="flex items-center justify-between">
+                <h2 className="font-semibold flex items-center gap-2">
+                  <QrCode className="w-4 h-4 text-primary" /> Scan QRIS
+                </h2>
+                {activeDeposit?.status && <StatusBadge status={activeDeposit.status} />}
               </div>
 
-              {/* Amount input */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-muted-foreground">Nominal</label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-medium text-sm">Rp</span>
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    value={numericAmount ? numericAmount.toLocaleString("id-ID") : ""}
-                    onChange={(e) => setAmount(e.target.value.replace(/\D/g, ""))}
-                    placeholder="0"
-                    className="w-full pl-10 pr-4 py-3 rounded-xl bg-white/5 border border-white/10 focus:border-primary/50 focus:outline-none text-lg font-semibold transition-colors"
+              {/* QR Image */}
+              <div className="flex justify-center">
+                <div className="p-3 bg-white rounded-2xl shadow-xl">
+                  <img
+                    src={qrisDisplayUrl}
+                    alt="QRIS Code"
+                    className="w-56 h-56 object-contain"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = "/qris.jpg";
+                    }}
                   />
                 </div>
               </div>
 
-              {/* Quick amounts */}
-              <div className="grid grid-cols-3 gap-2">
-                {QUICK_AMOUNTS.map((a) => (
-                  <button
-                    key={a}
-                    onClick={() => setAmount(String(a))}
-                    className={`py-2 rounded-xl text-sm font-medium border transition-all hover:scale-105 ${
-                      numericAmount === a
-                        ? "gradient-bg text-white border-transparent neon-glow-sm"
-                        : "bg-white/5 border-white/10 text-muted-foreground hover:border-primary/40 hover:text-foreground"
-                    }`}
-                  >
-                    {a >= 1000 ? (a / 1000) + "K" : a}
-                  </button>
-                ))}
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Nominal Bayar</span>
+                  <span className="font-bold text-primary">{formatRupiah(paidAmount)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Nama Merchant</span>
+                  <span className="font-semibold text-xs">ABDILAHH STORE OK2411269</span>
+                </div>
               </div>
 
-              {/* Total */}
-              {numericAmount >= MIN_DEPOSIT && (
-                <div className="rounded-xl bg-primary/10 border border-primary/20 p-3 flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground">Total Transfer</span>
-                  <span className="font-bold text-primary">{formatRupiah(numericAmount)}</span>
+              {(activeDeposit?.qrisCode) && (
+                <div className="rounded-xl bg-white/5 border border-white/10 p-3 flex items-center justify-between">
+                  <div>
+                    <div className="text-xs text-muted-foreground mb-1">Kode Pembayaran</div>
+                    <div className="font-mono text-sm font-semibold truncate max-w-[200px]">{activeDeposit.qrisCode}</div>
+                  </div>
+                  <button onClick={() => copyText(activeDeposit.qrisCode!)} className="p-2 rounded-lg hover:bg-white/10 transition-colors shrink-0">
+                    <Copy className="w-4 h-4 text-muted-foreground" />
+                  </button>
                 </div>
               )}
 
+              <div className="rounded-xl bg-green-400/5 border border-green-400/20 p-3 space-y-1">
+                <p className="text-xs text-green-400 font-medium">✓ Mendukung semua dompet digital</p>
+                <p className="text-xs text-muted-foreground">GoPay · OVO · DANA · ShopeePay · LinkAja</p>
+              </div>
+
               <button
-                onClick={handleCreate}
-                disabled={createMutation.isPending || numericAmount < MIN_DEPOSIT}
-                className="w-full py-3 rounded-xl shimmer-btn text-white font-semibold neon-glow hover:opacity-90 transition-all hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:scale-100 flex items-center justify-center gap-2"
+                onClick={() => { setShowQris(false); setActiveDepositId(null); setQrisImageUrl(""); }}
+                className="w-full py-2 rounded-xl bg-white/5 border border-white/10 text-sm text-muted-foreground hover:bg-white/10 transition-colors"
               >
-                {createMutation.isPending
-                  ? <><Loader2 className="w-4 h-4 animate-spin" /> Memproses...</>
-                  : <><QrCode className="w-4 h-4" /> Tampilkan QR &amp; Bayar</>}
+                Batal
               </button>
             </div>
-
-            {/* QR Code panel */}
-            {showQris ? (
-              <div className="glass rounded-2xl border border-primary/30 p-5 space-y-4 neon-glow-sm">
-                <div className="flex items-center justify-between">
-                  <h2 className="font-semibold flex items-center gap-2">
-                    <QrCode className="w-4 h-4 text-primary" /> Scan QRIS
-                  </h2>
-                  {activeDeposit?.status && <StatusBadge status={activeDeposit.status} />}
-                </div>
-
-                {/* Tampilkan QR dari API jika ada, fallback ke static */}
-                <div className="flex justify-center">
-                  <div className="p-3 bg-white rounded-2xl shadow-xl">
-                    <img
-                      src={
-                        activeDeposit?.qrCode
-                          ? activeDeposit.qrCode
-                          : "/qris.jpg"
-                      }
-                      alt="QRIS Code"
-                      className="w-56 h-auto object-contain"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Nominal Bayar</span>
-                    <span className="font-bold text-primary">{formatRupiah(numericAmount || 0)}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Nama Merchant</span>
-                    <span className="font-semibold text-xs">ABDILAHH STORE OK2411269</span>
-                  </div>
-                </div>
-
-                {activeDeposit?.paymentCode && (
-                  <div className="rounded-xl bg-white/5 border border-white/10 p-3 flex items-center justify-between">
-                    <div>
-                      <div className="text-xs text-muted-foreground mb-1">Kode Pembayaran</div>
-                      <div className="font-mono text-sm font-semibold">{activeDeposit.paymentCode}</div>
-                    </div>
-                    <button onClick={() => copyText(activeDeposit.paymentCode!)} className="p-2 rounded-lg hover:bg-white/10 transition-colors">
-                      <Copy className="w-4 h-4 text-muted-foreground" />
-                    </button>
-                  </div>
-                )}
-
-                <div className="rounded-xl bg-green-400/5 border border-green-400/20 p-3 space-y-1">
-                  <p className="text-xs text-green-400 font-medium">✓ Mendukung semua dompet digital</p>
-                  <p className="text-xs text-muted-foreground">GoPay · OVO · DANA · ShopeePay · LinkAja</p>
-                </div>
-
-                <button
-                  onClick={() => { setShowQris(false); setActiveDepositId(null); }}
-                  className="w-full py-2 rounded-xl bg-white/5 border border-white/10 text-sm text-muted-foreground hover:bg-white/10 transition-colors"
-                >
-                  Batal
-                </button>
-              </div>
-            ) : (
-              /* Cara deposit */
-              <div className="glass rounded-2xl border border-white/10 p-5 space-y-4">
-                <h2 className="font-semibold flex items-center gap-2">
-                  <QrCode className="w-4 h-4 text-primary" /> Cara Deposit
-                </h2>
-                <div className="space-y-3">
-                  {[
-                    { step: "1", text: "Masukkan nominal deposit minimal Rp 5.000" },
-                    { step: "2", text: "Klik tombol Tampilkan QR & Bayar" },
-                    { step: "3", text: "Scan QR Code dengan aplikasi dompet digital kamu" },
-                    { step: "4", text: "Saldo otomatis bertambah setelah pembayaran dikonfirmasi" },
-                  ].map((s) => (
-                    <div key={s.step} className="flex items-start gap-3">
-                      <div className="w-6 h-6 rounded-full gradient-bg flex items-center justify-center text-xs text-white font-bold shrink-0 mt-0.5">{s.step}</div>
-                      <p className="text-sm text-muted-foreground">{s.text}</p>
-                    </div>
-                  ))}
-                </div>
-                <div className="rounded-xl bg-green-400/5 border border-green-400/20 p-3">
-                  <p className="text-xs text-green-400 font-medium">✓ GoPay, OVO, DANA, ShopeePay, dan semua QRIS</p>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Riwayat deposit */}
-          <div className="glass rounded-2xl border border-white/10 overflow-hidden">
-            <div className="p-5 border-b border-white/10 flex items-center gap-2">
-              <ArrowDownCircle className="w-5 h-5 text-primary" />
-              <h2 className="font-semibold">Riwayat Deposit</h2>
-            </div>
-            {!history || (history as any[]).length === 0 ? (
-              <div className="p-10 text-center text-muted-foreground">
-                <QrCode className="w-10 h-10 mx-auto mb-3 opacity-30" />
-                <p className="text-sm">Belum ada riwayat deposit</p>
-              </div>
-            ) : (
-              <div className="divide-y divide-white/5">
-                {(history as any[]).map((d: any) => (
-                  <div key={d.id} className="p-4 flex items-center justify-between hover:bg-white/5 transition-colors">
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center">
-                        <QrCode className="w-4 h-4 text-primary" />
-                      </div>
-                      <div>
-                        <div className="text-sm font-semibold">{formatRupiah(d.amount)}</div>
-                        <div className="text-xs text-muted-foreground">
-                          {new Date(d.createdAt).toLocaleDateString("id-ID", {
-                            day: "numeric", month: "short", year: "numeric",
-                            hour: "2-digit", minute: "2-digit"
-                          })}
-                        </div>
-                      </div>
-                    </div>
-                    <StatusBadge status={d.status} />
+          ) : (
+            /* Cara deposit */
+            <div className="glass rounded-2xl border border-white/10 p-5 space-y-4">
+              <h2 className="font-semibold flex items-center gap-2">
+                <QrCode className="w-4 h-4 text-primary" /> Cara Deposit
+              </h2>
+              <div className="space-y-3">
+                {[
+                  { step: "1", text: "Masukkan nominal deposit minimal Rp 5.000" },
+                  { step: "2", text: "Klik tombol Tampilkan QR & Bayar" },
+                  { step: "3", text: "Scan QR Code dengan aplikasi dompet digital kamu" },
+                  { step: "4", text: "Saldo otomatis bertambah setelah pembayaran dikonfirmasi" },
+                ].map((s) => (
+                  <div key={s.step} className="flex items-start gap-3">
+                    <div className="w-6 h-6 rounded-full gradient-bg flex items-center justify-center text-xs text-white font-bold shrink-0 mt-0.5">{s.step}</div>
+                    <p className="text-sm text-muted-foreground">{s.text}</p>
                   </div>
                 ))}
               </div>
-            )}
-          </div>
+              <div className="rounded-xl bg-green-400/5 border border-green-400/20 p-3">
+                <p className="text-xs text-green-400 font-medium">✓ GoPay, OVO, DANA, ShopeePay, dan semua QRIS</p>
+              </div>
+            </div>
+          )}
         </div>
-      </AppLayout>
-    );
-  }
-  
+
+        {/* Riwayat deposit */}
+        <div className="glass rounded-2xl border border-white/10 overflow-hidden">
+          <div className="p-5 border-b border-white/10 flex items-center gap-2">
+            <ArrowDownCircle className="w-5 h-5 text-primary" />
+            <h2 className="font-semibold">Riwayat Deposit</h2>
+          </div>
+          {!history || (history as any[]).length === 0 ? (
+            <div className="p-10 text-center text-muted-foreground">
+              <QrCode className="w-10 h-10 mx-auto mb-3 opacity-30" />
+              <p className="text-sm">Belum ada riwayat deposit</p>
+            </div>
+          ) : (
+            <div className="divide-y divide-white/5">
+              {(history as any[]).map((d: any) => (
+                <div key={d.id} className="p-4 flex items-center justify-between hover:bg-white/5 transition-colors group">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center">
+                      <QrCode className="w-4 h-4 text-primary" />
+                    </div>
+                    <div>
+                      <div className="text-sm font-semibold">{formatRupiah(d.amount)}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {new Date(d.createdAt).toLocaleDateString("id-ID", {
+                          day: "numeric", month: "short", year: "numeric",
+                          hour: "2-digit", minute: "2-digit"
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <StatusBadge status={d.status} />
+                    <button
+                      onClick={() => handleDelete(d.id)}
+                      disabled={deletingId === d.id}
+                      className="p-1.5 rounded-lg text-red-400/60 hover:text-red-400 hover:bg-red-400/10 transition-colors opacity-0 group-hover:opacity-100 disabled:opacity-50"
+                      title="Hapus"
+                    >
+                      {deletingId === d.id
+                        ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        : <Trash2 className="w-3.5 h-3.5" />}
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </AppLayout>
+  );
+}
