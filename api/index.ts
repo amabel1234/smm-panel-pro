@@ -2,8 +2,8 @@ import express, { type Express, Router, type Request, type Response, type NextFu
 import cors from "cors";
 import bcrypt from "bcryptjs";
 import { eq, and, desc, sql, ilike } from "drizzle-orm";
-import { drizzle } from "drizzle-orm/neon-http";
-import { neon } from "@neondatabase/serverless";
+import { drizzle } from "drizzle-orm/node-postgres";
+import pg from "pg";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
 
@@ -159,8 +159,8 @@ const nokosNumbersTable = pgTable("nokos_numbers", {
 });
 
 // ── DB ────────────────────────────────────────────────────────────────────────
-const sqlConn = neon(process.env.DATABASE_URL as string);
-const db = drizzle(sqlConn, {
+const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL as string, ssl: { rejectUnauthorized: false } });
+const db = drizzle(pool, {
   schema: {
     usersTable, servicesCategoryTable, servicesTable, favoriteServicesTable,
     ordersTable, depositsTable, transactionsTable, ticketsTable,
