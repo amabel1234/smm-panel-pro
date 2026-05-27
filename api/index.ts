@@ -1,9 +1,9 @@
 import express, { type Express, Router, type Request, type Response, type NextFunction, type RequestHandler } from "express";
 import cors from "cors";
 import bcrypt from "bcryptjs";
-import { eq, and, desc, sql, ilike } from "drizzle-orm";
-import { drizzle } from "drizzle-orm/node-postgres";
-import pg from "pg";
+import { eq, and, desc, sql as drizzleSql, ilike } from "drizzle-orm";
+import { drizzle } from "drizzle-orm/neon-http";
+import { neon } from "@neondatabase/serverless";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
 
@@ -159,8 +159,8 @@ const nokosNumbersTable = pgTable("nokos_numbers", {
 });
 
 // ── DB ────────────────────────────────────────────────────────────────────────
-const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL as string, ssl: { rejectUnauthorized: false } });
-const db = drizzle(pool, {
+const sql = neon(process.env.DATABASE_URL as string);
+const db = drizzle(sql, {
   schema: {
     usersTable, servicesCategoryTable, servicesTable, favoriteServicesTable,
     ordersTable, depositsTable, transactionsTable, ticketsTable,
@@ -321,7 +321,7 @@ router.get("/orders", requireAuth, async (req: any, res: any): Promise<void> => 
   const offset = (page - 1) * limit;
   const conds: any[] = [eq(ordersTable.userId, req.userId!)];
   if (req.query.status) conds.push(eq(ordersTable.status, req.query.status));
-  const [{ count }] = await db.select({ count: sql<number>`count(*)::int` }).from(ordersTable).where(and(...conds));
+  const [{ count }] = await db.select({ count: drizzleSql<number>`count(*)::int` }).from(ordersTable).where(and(...conds));
   const orders = await db.select().from(ordersTable).where(and(...conds)).orderBy(desc(ordersTable.createdAt)).limit(limit).offset(offset);
   res.json({ orders: orders.map(serializeOrder), total: count, page, limit });
 });
@@ -371,10 +371,10 @@ router.get("/dashboard/stats", requireAuth, async (req: any, res: any): Promise<
   const users = await db.select().from(usersTable).where(eq(usersTable.id, req.userId!));
   if (!users.length) { res.status(404).json({ error: "User tidak ditemukan" }); return; }
   const user = users[0];
-  const [{ count: totalOrders }] = await db.select({ count: sql<number>`count(*)::int` }).from(ordersTable).where(eq(ordersTable.userId, req.userId!));
-  const [{ count: activeOrders }] = await db.select({ count: sql<number>`count(*)::int` }).from(ordersTable).where(and(eq(ordersTable.userId, req.userId!), eq(ordersTable.status, "processing")));
-  const [{ count: pendingOrders }] = await db.select({ count: sql<number>`count(*)::int` }).from(ordersTable).where(and(eq(ordersTable.userId, req.userId!), eq(ordersTable.status, "pending")));
-  const [{ count: completedOrders }] = await db.select({ count: sql<number>`count(*)::int` }).from(ordersTable).where(and(eq(ordersTable.userId, req.userId!), eq(ordersTable.status, "completed")));
+  const [{ count: totalOrders }] = await db.select({ count: drizzleSql<number>`count(*)::int` }).from(ordersTable).where(eq(ordersTable.userId, req.userId!));
+  const [{ count: activeOrders }] = await db.select({ count: drizzleSql<number>`count(*)::int` }).from(ordersTable).where(and(eq(ordersTable.userId, req.userId!), eq(ordersTable.status, "processing")));
+  const [{ count: pendingOrders }] = await db.select({ count: drizzleSql<number>`count(*)::int` }).from(ordersTable).where(and(eq(ordersTable.userId, req.userId!), eq(ordersTable.status, "pending")));
+  const [{ count: completedOrders }] = await db.select({ count: drizzleSql<number>`count(*)::int` }).from(ordersTable).where(and(eq(ordersTable.userId, req.userId!), eq(ordersTable.status, "completed")));
   const recentOrders = await db.select().from(ordersTable).where(eq(ordersTable.userId, req.userId!)).orderBy(desc(ordersTable.createdAt)).limit(5);
   const recentTransactions = await db.select().from(transactionsTable).where(eq(transactionsTable.userId, req.userId!)).orderBy(desc(transactionsTable.createdAt)).limit(5);
   res.json({
@@ -466,10 +466,10 @@ router.post("/nokos/buy", requireAuth, async (req: any, res: any): Promise<void>
 
 // ── Admin ─────────────────────────────────────────────────────────────────────
 router.get("/admin/stats", requireAdmin, async (_req: any, res: any): Promise<void> => {
-  const [{ count: totalUsers }] = await db.select({ count: sql<number>`count(*)::int` }).from(usersTable);
-  const [{ count: totalOrders }] = await db.select({ count: sql<number>`count(*)::int` }).from(ordersTable);
-  const [{ count: pendingDeposits }] = await db.select({ count: sql<number>`count(*)::int` }).from(depositsTable).where(eq(depositsTable.status, "pending"));
-  const [{ total: totalRevenue }] = await db.select({ total: sql<number>`coalesce(sum(amount::numeric), 0)::float` }).from(depositsTable).where(eq(depositsTable.status, "approved"));
+  const [{ count: totalUsers }] = await db.select({ count: drizzleSql<number>`count(*)::int` }).from(usersTable);
+  const [{ count: totalOrders }] = await db.select({ count: drizzleSql<number>`count(*)::int` }).from(ordersTable);
+  const [{ count: pendingDeposits }] = await db.select({ count: drizzleSql<number>`count(*)::int` }).from(depositsTable).where(eq(depositsTable.status, "pending"));
+  const [{ total: totalRevenue }] = await db.select({ total: drizzleSql<number>`coalesce(sum(amount::numeric), 0)::float` }).from(depositsTable).where(eq(depositsTable.status, "approved"));
   res.json({ totalUsers, totalOrders, pendingDeposits, totalRevenue: totalRevenue ?? 0 });
 });
 
