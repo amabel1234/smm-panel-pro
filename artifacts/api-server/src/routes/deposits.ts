@@ -53,6 +53,16 @@ router.post("/deposits", requireAuth, async (req: AuthRequest, res): Promise<voi
   });
 });
 
+router.delete("/deposits/:id", requireAuth, async (req: AuthRequest, res): Promise<void> => {
+  const rawId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+  const id = parseInt(rawId, 10);
+  const deposits = await db.select().from(depositsTable)
+    .where(and(eq(depositsTable.id, id), eq(depositsTable.userId, req.userId!)));
+  if (deposits.length === 0) { res.status(404).json({ error: "Deposit not found" }); return; }
+  await db.delete(depositsTable).where(eq(depositsTable.id, id));
+  res.json({ success: true });
+});
+
 router.get("/deposits/:id", requireAuth, async (req: AuthRequest, res): Promise<void> => {
   const rawId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
   const id = parseInt(rawId, 10);
